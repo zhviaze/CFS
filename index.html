@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CFS株式会社 | Cross Finance Services</title>
+    <style>
+      :root {
+        --ink: #111111;
+        --body: #4a4a4a;
+        --muted: #777777;
+        --teal: #0e8f94;
+        --navy: #102a43;
+        --pale: #f4f8f9;
+        --line: #e3ecef;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background: #fff;
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "Google Sans", "Noto Sans JP",
+          "Hiragino Sans", "Yu Gothic", Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .wrap {
+        width: min(1120px, calc(100% - 40px));
+        margin: 0 auto;
+      }
+
+      .hero {
+        position: relative;
+        min-height: 760px;
+        display: grid;
+        align-items: center;
+        overflow: hidden;
+        padding: 96px 0 118px;
+        background:
+          radial-gradient(circle at 82% 18%, rgba(14, 143, 148, 0.14), transparent 30%),
+          #ffffff;
+      }
+
+      .hero::before {
+        position: absolute;
+        top: 12%;
+        right: -160px;
+        width: 520px;
+        height: 520px;
+        border: 1px solid rgba(14, 143, 148, 0.16);
+        border-radius: 999px;
+        content: "";
+        animation: haloDrift 14s ease-in-out infinite;
+      }
+
+      .hero-grid {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: 1.02fr 0.98fr;
+        gap: 72px;
+        align-items: center;
+      }
+
+      .eyebrow {
+        margin: 0 0 28px;
+        color: var(--teal);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        color: var(--navy);
+        font-size: clamp(62px, 9vw, 112px);
+        font-weight: 800;
+        letter-spacing: -0.065em;
+        line-height: 0.9;
+      }
+
+      h1 span {
+        display: block;
+        color: var(--teal);
+        font-size: 0.48em;
+        letter-spacing: 0.04em;
+        line-height: 1.25;
+        text-transform: uppercase;
+      }
+
+      .lead {
+        margin: 38px 0 0;
+        max-width: 720px;
+        color: var(--body);
+        font-size: 25px;
+        font-weight: 650;
+        line-height: 1.75;
+        letter-spacing: -0.03em;
+      }
+
+      .body-copy {
+        color: var(--body);
+        font-size: 18px;
+        line-height: 2;
+      }
+
+      .english {
+        margin: 24px 0 0;
+        max-width: 640px;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.8;
+      }
+
+      .buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 48px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        border-radius: 999px;
+        padding: 0 24px;
+        font-size: 14px;
+        font-weight: 800;
+        transition:
+          transform 220ms ease,
+          box-shadow 220ms ease,
+          border-color 220ms ease,
+          background 220ms ease;
+      }
+
+      .button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 40px rgba(16, 42, 67, 0.12);
+      }
+
+      .button.primary {
+        background: var(--navy);
+        color: #fff;
+      }
+
+      .button.secondary {
+        border: 1px solid var(--line);
+        color: var(--navy);
+      }
+
+      .visual {
+        position: relative;
+        min-height: 520px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 36px;
+        background:
+          linear-gradient(150deg, rgba(16, 42, 67, 0.94), rgba(14, 143, 148, 0.92)),
+          var(--navy);
+        box-shadow: 0 45px 120px rgba(16, 42, 67, 0.18);
+        padding: 32px;
+        color: #fff;
+        animation: visualEntrance 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        transition:
+          transform 500ms ease,
+          box-shadow 500ms ease;
+      }
+
+      .visual:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 52px 130px rgba(16, 42, 67, 0.23);
+      }
+
+      .visual::before {
+        position: absolute;
+        inset: -20% -10% auto auto;
+        width: 420px;
+        height: 420px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.16);
+        content: "";
+        animation: softFloat 12s ease-in-out infinite;
+      }
+
+      .visual-inner {
+        position: relative;
+        display: flex;
+        min-height: 456px;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .visual-top {
+        display: flex;
+        justify-content: space-between;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 12px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      .visual-title {
+        max-width: 430px;
+        font-size: 46px;
+        font-weight: 800;
+        letter-spacing: -0.055em;
+        line-height: 1.02;
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+      }
+
+      .metric {
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.11);
+        padding: 22px;
+        backdrop-filter: blur(12px);
+        transition:
+          transform 260ms ease,
+          background 260ms ease,
+          border-color 260ms ease;
+      }
+
+      .metric:hover {
+        transform: translateY(-4px);
+        border-color: rgba(255, 255, 255, 0.34);
+        background: rgba(255, 255, 255, 0.16);
+      }
+
+      .metric strong {
+        display: block;
+        font-size: 26px;
+        letter-spacing: -0.035em;
+      }
+
+      .metric span {
+        display: block;
+        margin-top: 10px;
+        color: rgba(255, 255, 255, 0.68);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .section {
+        padding: 112px 0;
+      }
+
+      .section.pale {
+        background: var(--pale);
+      }
+
+      .section-head {
+        display: grid;
+        grid-template-columns: 0.36fr 1fr;
+        gap: 44px;
+        align-items: end;
+        margin-bottom: 56px;
+      }
+
+      h2 {
+        margin: 0;
+        color: var(--navy);
+        font-size: 52px;
+        font-weight: 800;
+        letter-spacing: -0.055em;
+        line-height: 1.08;
+      }
+
+      .sub {
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .mission-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 30px;
+        background: var(--line);
+      }
+
+      .mission-card {
+        background: #fff;
+        padding: 38px;
+        transition:
+          transform 260ms ease,
+          box-shadow 260ms ease;
+      }
+
+      .mission-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 24px 70px rgba(16, 42, 67, 0.08);
+      }
+
+      .mission-card h3 {
+        margin: 0;
+        color: var(--teal);
+        font-size: 14px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+      }
+
+      .mission-card p {
+        margin: 32px 0 0;
+        color: var(--navy);
+        font-size: 24px;
+        font-weight: 750;
+        line-height: 1.55;
+        letter-spacing: -0.035em;
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 26px;
+        background: #fff;
+        padding: 30px;
+        min-height: 320px;
+        transition:
+          transform 260ms ease,
+          box-shadow 260ms ease,
+          border-color 260ms ease;
+      }
+
+      .card:hover {
+        transform: translateY(-6px);
+        border-color: rgba(14, 143, 148, 0.32);
+        box-shadow: 0 28px 80px rgba(16, 42, 67, 0.09);
+      }
+
+      .card small {
+        color: var(--teal);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      h3 {
+        margin: 28px 0 0;
+        color: var(--navy);
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 1.2;
+      }
+
+      .card p {
+        margin: 18px 0 0;
+        color: var(--body);
+        line-height: 1.85;
+      }
+
+      .strengths {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+      }
+
+      .strength {
+        border-top: 2px solid var(--teal);
+        padding-top: 24px;
+        transition:
+          transform 260ms ease,
+          border-color 260ms ease;
+      }
+
+      .strength:hover {
+        transform: translateY(-4px);
+        border-color: var(--navy);
+      }
+
+      .strength span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .strength p {
+        margin: 36px 0 0;
+        color: var(--navy);
+        font-size: 20px;
+        font-weight: 800;
+        line-height: 1.45;
+        letter-spacing: -0.035em;
+      }
+
+      .company {
+        display: grid;
+        grid-template-columns: 0.95fr 1.05fr;
+        gap: 56px;
+        align-items: start;
+      }
+
+      .table {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--line);
+      }
+
+      .table div {
+        background: #fff;
+        padding: 24px;
+        transition: background 220ms ease;
+      }
+
+      .table div:hover {
+        background: #fbfdfd;
+      }
+
+      dt {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      dd {
+        margin: 10px 0 0;
+        color: var(--navy);
+        font-weight: 800;
+        line-height: 1.55;
+      }
+
+      .contact {
+        background: var(--navy);
+        color: #fff;
+        padding: 112px 0;
+      }
+
+      .contact h2 {
+        color: #fff;
+      }
+
+      .contact .body-copy,
+      .contact .sub {
+        color: rgba(255, 255, 255, 0.72);
+      }
+
+      .contact .button {
+        background: #fff;
+        color: var(--navy);
+      }
+
+      .hero .eyebrow,
+      .hero h1,
+      .hero .lead,
+      .hero .body-copy,
+      .hero .english,
+      .hero .buttons {
+        animation: fadeUp 780ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      }
+
+      .hero h1 {
+        animation-delay: 90ms;
+      }
+
+      .hero .lead {
+        animation-delay: 180ms;
+      }
+
+      .hero .body-copy {
+        animation-delay: 270ms;
+      }
+
+      .hero .english {
+        animation-delay: 360ms;
+      }
+
+      .hero .buttons {
+        animation-delay: 450ms;
+      }
+
+      .motion-ready .reveal {
+        opacity: 0;
+        transform: translateY(28px);
+        transition:
+          opacity 720ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          transform 720ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        transition-delay: calc(var(--reveal-order, 0) * 70ms);
+      }
+
+      .motion-ready .reveal.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(22px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes visualEntrance {
+        from {
+          opacity: 0;
+          transform: translateY(28px) scale(0.98);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes softFloat {
+        0%,
+        100% {
+          transform: translate3d(0, 0, 0) scale(1);
+        }
+
+        50% {
+          transform: translate3d(-42px, 46px, 0) scale(1.08);
+        }
+      }
+
+      @keyframes haloDrift {
+        0%,
+        100% {
+          transform: translate3d(0, 0, 0) rotate(0deg);
+          opacity: 0.62;
+        }
+
+        50% {
+          transform: translate3d(-48px, 34px, 0) rotate(8deg);
+          opacity: 1;
+        }
+      }
+
+      @media (max-width: 980px) {
+        .hero-grid,
+        .section-head,
+        .company {
+          grid-template-columns: 1fr;
+        }
+
+        .mission-grid,
+        .cards,
+        .strengths,
+        .table {
+          grid-template-columns: 1fr;
+        }
+
+        h2 {
+          font-size: 40px;
+        }
+
+        .visual {
+          min-height: 430px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 1ms !important;
+          animation-iteration-count: 1 !important;
+          scroll-behavior: auto !important;
+          transition-duration: 1ms !important;
+        }
+
+        .motion-ready .reveal {
+          opacity: 1;
+          transform: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <div class="wrap hero-grid">
+          <div>
+            <p class="eyebrow">Cross Finance Services</p>
+            <h1>CFS株式会社<span>Cross Finance Services</span></h1>
+            <p class="lead">
+              決済を中心とした金融サービスを、より便利に、より合理的に、より効率的に。
+            </p>
+            <p class="body-copy">
+              既存の枠組に縛られず、クリエイティブな発想とプロフェッショナルな専門知識を融合させ、利用者・企業・業界にとって本当に嬉しい決済・金融ソリューションを提供します。
+            </p>
+            <p class="english">Creative ideas. Professional expertise. Better financial services.</p>
+            <div class="buttons">
+              <a class="button primary" href="#services">業務領域を見る</a>
+              <a class="button secondary" href="#contact">お問い合わせ</a>
+            </div>
+          </div>
+          <div class="visual">
+            <div class="visual-inner">
+              <div class="visual-top">
+                <span>Payment</span>
+                <span>FinTech</span>
+              </div>
+              <div class="visual-title">
+                Better financial services, designed for real needs.
+              </div>
+              <div class="metric-grid">
+                <div class="metric"><strong>Pay Master</strong><span>WeChat Payを中心にした決済代行</span></div>
+                <div class="metric"><strong>Consulting</strong><span>金融機関・FinTech企業向け支援</span></div>
+                <div class="metric"><strong>Product</strong><span>業務構築・製品構築支援</span></div>
+                <div class="metric"><strong>Inbound</strong><span>中国向け広告・マーケティング</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="mission" class="section pale">
+        <div class="wrap">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Mission / Vision / Value</p>
+              <p class="sub">便利に、合理的に、効率的に。</p>
+            </div>
+            <h2>真のニーズから、決済・金融の次をつくる。</h2>
+          </div>
+          <div class="mission-grid">
+            <article class="mission-card">
+              <h3>Mission</h3>
+              <p>決済を中心に、世の中の金融サービスをより便利に、より合理的に、より効率的にする。</p>
+            </article>
+            <article class="mission-card">
+              <h3>Vision</h3>
+              <p>人、企業、業界、業態にとって本当に嬉しい決済・金融ソリューションを提供する。</p>
+            </article>
+            <article class="mission-card">
+              <h3>Value</h3>
+              <p>プロフェッショナル。実現主義。クリエーティブな発想。真のニーズ。パッション。</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="services" class="section">
+        <div class="wrap">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Services</p>
+              <p class="sub">Payment, consulting, product development, and marketing.</p>
+            </div>
+            <h2>業務領域</h2>
+          </div>
+          <div class="cards">
+            <article class="card">
+              <small>Payment Collection</small>
+              <h3>収納代行</h3>
+              <p>サービス名「Pay Master」。WeChat Payを中心に、オンライン決済・オフライン決済の両方に対応した決済代行サービスを提供します。</p>
+            </article>
+            <article class="card">
+              <small>Consulting</small>
+              <h3>コンサルティング</h3>
+              <p>金融機関とFinTech企業向けに、QR決済、コンタクトレス決済、クレジットカード決済、バンキング、保険領域を支援します。</p>
+            </article>
+            <article class="card">
+              <small>Business and Product</small>
+              <h3>業務構築・製品構築支援</h3>
+              <p>要件分析、プロジェクトマネジメント、設計、開発まで、金融分野の業務構築と製品開発をワンストップでサポートします。</p>
+            </article>
+            <article class="card">
+              <small>Marketing</small>
+              <h3>広告・マーケティング</h3>
+              <p>教育、観光、リテーリング、医療美容を中心に、中国向け広告・マーケティングを立案から効果測定まで支援します。</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="strengths" class="section pale">
+        <div class="wrap">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Strengths</p>
+              <p class="sub">Creative ideas with professional execution.</p>
+            </div>
+            <h2>CFSが選ばれる理由</h2>
+          </div>
+          <div class="strengths">
+            <div class="strength"><span>01</span><p>決済・金融領域に特化した専門性</p></div>
+            <div class="strength"><span>02</span><p>業務構築から製品開発までの一貫支援</p></div>
+            <div class="strength"><span>03</span><p>中国・インバウンド市場への理解</p></div>
+            <div class="strength"><span>04</span><p>クリエイティブな発想と実現主義</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="company" class="section">
+        <div class="wrap company">
+          <div>
+            <p class="eyebrow">Company</p>
+            <h2>会社概要</h2>
+            <p class="body-copy">
+              CFS株式会社は、デジタル決済・バンキングを中心にしたコンサルティングサービス、業界特化型の決済代行サービス、関連する業務構築・製品構築支援、インバウンド向け広告・マーケティング業務を提供しています。
+            </p>
+          </div>
+          <dl class="table">
+            <div><dt>社名</dt><dd>CFS株式会社</dd></div>
+            <div><dt>英語名</dt><dd>CFS Inc.</dd></div>
+            <div><dt>設立</dt><dd>2023年</dd></div>
+            <div><dt>経営者</dt><dd>CEO＆CTO 朱 杭</dd></div>
+            <div><dt>所在地</dt><dd>東京都港区白金台 3-7-29</dd></div>
+            <div><dt>Contact</dt><dd>contact@cfsjp.com</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section id="contact" class="contact">
+        <div class="wrap company">
+          <div>
+            <p class="eyebrow">Contact</p>
+            <h2>より良い決済・金融サービスを、ともにつくる。</h2>
+          </div>
+          <div>
+            <p class="body-copy">
+              決済・金融サービス、業務構築、製品開発、Pay Master、インバウンド向け広告・マーケティングについて、お気軽にお問い合わせください。
+            </p>
+            <p class="sub">Let’s design better financial services together.</p>
+            <div class="buttons">
+              <a class="button" href="mailto:contact@cfsjp.com">contact@cfsjp.com</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script>
+      (() => {
+        const targets = document.querySelectorAll(
+          ".section-head, .mission-card, .card, .strength, .company > *, .contact .wrap > *"
+        );
+
+        document.body.classList.add("motion-ready");
+
+        targets.forEach((element, index) => {
+          element.classList.add("reveal");
+          element.style.setProperty("--reveal-order", index % 4);
+        });
+
+        if (!("IntersectionObserver" in window)) {
+          targets.forEach((element) => element.classList.add("is-visible"));
+          return;
+        }
+
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("is-visible");
+                observer.unobserve(entry.target);
+              }
+            });
+          },
+          { threshold: 0.18, rootMargin: "0px 0px -8% 0px" }
+        );
+
+        targets.forEach((element) => observer.observe(element));
+      })();
+    </script>
+  </body>
+</html>
