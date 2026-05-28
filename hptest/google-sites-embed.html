@@ -713,10 +713,6 @@
               既存の枠組に縛られず、クリエイティブな発想とプロフェッショナルな専門知識を融合させ、利用者・企業・業界にとって本当に嬉しい決済・金融ソリューションを提供します。
             </p>
             <p class="english">Creative ideas. Professional expertise. Better financial services.</p>
-            <div class="buttons">
-              <button class="button primary" type="button" data-scroll-target="services">業務領域を見る</button>
-              <button class="button secondary" type="button" data-scroll-target="contact">お問い合わせ</button>
-            </div>
           </div>
           <div class="visual">
             <div class="visual-inner">
@@ -848,7 +844,7 @@
             </p>
             <p class="sub">Let’s design better financial services together.</p>
             <div class="buttons">
-              <a class="button" href="./contact.html" onclick="window.location.href='./contact.html'; return false;">問い合わせフォームへ</a>
+              <a class="button" href="./contact.html" target="_blank" rel="noopener" onclick="window.open('./contact.html', '_blank', 'noopener'); return false;">問い合わせフォームへ</a>
               <a class="button secondary" href="mailto:contact@cfsjp.com">contact@cfsjp.com</a>
             </div>
           </div>
@@ -871,18 +867,6 @@
     </footer>
     <script>
       (() => {
-        document.querySelectorAll("[data-scroll-target]").forEach((button) => {
-          button.addEventListener("click", () => {
-            const target = document.getElementById(button.dataset.scrollTarget);
-
-            if (!target) {
-              return;
-            }
-
-            target.scrollIntoView({ behavior: "smooth", block: "start" });
-          });
-        });
-
         const targets = document.querySelectorAll(
           ".section-head, .mission-card, .card, .strength, .company > *, .contact .wrap > *"
         );
