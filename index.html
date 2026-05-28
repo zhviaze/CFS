@@ -5,17 +5,227 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CFS株式会社 | Company Profile</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes cfsFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+
+    @keyframes cfsPulse {
+      0%, 100% { opacity: 0.55; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.04); }
+    }
+
+    @keyframes cfsFadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes cfsGlowLine {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+
+    @keyframes cfsRotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes cfsParticle {
+      0% {
+        transform: translate3d(0, 0, 0) scale(0.9);
+        opacity: 0;
+      }
+      20% {
+        opacity: 0.9;
+      }
+      100% {
+        transform: translate3d(-120px, -180px, 0) scale(1.4);
+        opacity: 0;
+      }
+    }
+
+    @keyframes cfsShine {
+      0% {
+        transform: translateX(-120%) skewX(-24deg);
+      }
+      100% {
+        transform: translateX(220%) skewX(-24deg);
+      }
+    }
+
+    @keyframes cfsGridMove {
+      from {
+        background-position: 0 0;
+      }
+      to {
+        background-position: 120px 120px;
+      }
+    }
+
+    @keyframes cfsTextGlow {
+      0%, 100% {
+        text-shadow: 0 0 0 rgba(18,155,239,0);
+        opacity: 0.92;
+      }
+      50% {
+        text-shadow:
+          0 0 18px rgba(18,155,239,0.22),
+          0 0 36px rgba(43,76,255,0.10);
+        opacity: 1;
+      }
+    }
+
+    @keyframes cfsTextFloat {
+      0%, 100% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-4px);
+      }
+    }
+
+    @keyframes cfsGradientShift {
+      0% {
+        background-position: 0% 50%;
+      }
+      100% {
+        background-position: 200% 50%;
+      }
+    }
+      to {
+        background-position: 120px 120px;
+      }
+    }
+      100% { background-position: 200% 50%; }
+    }
+
+    .cfs-fade-up {
+      animation: cfsFadeUp 0.9s ease-out both;
+    }
+
+    .cfs-delay-1 { animation-delay: 0.12s; }
+    .cfs-delay-2 { animation-delay: 0.24s; }
+    .cfs-delay-3 { animation-delay: 0.36s; }
+
+    .cfs-globe-float {
+      animation: cfsFloat 7s ease-in-out infinite;
+    }
+
+    .cfs-pulse {
+      animation: cfsPulse 3.2s ease-in-out infinite;
+    }
+
+    .cfs-flow-card {
+      animation: cfsFloat 5.5s ease-in-out infinite;
+    }
+
+    .cfs-flow-card:nth-of-type(2) { animation-delay: 0.4s; }
+    .cfs-flow-card:nth-of-type(3) { animation-delay: 0.8s; }
+    .cfs-flow-card:nth-of-type(4) { animation-delay: 1.2s; }
+
+        .cfs-animated-line {
+      background-size: 200% 100%;
+      animation: cfsGlowLine 3.6s linear infinite;
+    }
+
+    .cfs-rotate-slow {
+      animation: cfsRotate 28s linear infinite;
+    }
+
+    .cfs-grid-motion {
+      background-image:
+        linear-gradient(rgba(18,155,239,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(18,155,239,0.05) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: cfsGridMove 16s linear infinite;
+    }
+
+    .cfs-particle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(18,155,239,0.8) 45%, rgba(18,155,239,0) 100%);
+      filter: blur(0.4px);
+      animation: cfsParticle 8s linear infinite;
+    }
+
+    .cfs-particle:nth-child(1) { left: 72%; top: 78%; animation-delay: 0s; }
+    .cfs-particle:nth-child(2) { left: 82%; top: 72%; animation-delay: 1.5s; }
+    .cfs-particle:nth-child(3) { left: 76%; top: 84%; animation-delay: 3s; }
+    .cfs-particle:nth-child(4) { left: 88%; top: 76%; animation-delay: 4.5s; }
+
+    .cfs-shine {
+      position: relative;
+      overflow: hidden;
+    }
+
+        .cfs-shine::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 20%, rgba(255,255,255,0.55) 48%, transparent 72%);
+      animation: cfsShine 5.5s ease-in-out infinite;
+    }
+
+    .cfs-title-motion {
+      animation:
+        cfsTextGlow 5s ease-in-out infinite,
+        cfsTextFloat 7s ease-in-out infinite;
+    }
+
+    .cfs-gradient-text {
+      background: linear-gradient(90deg, #129BEF, #2B4CFF, #129BEF);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: cfsGradientShift 6s linear infinite;
+    }
+
+    .cfs-soft-float {
+      animation: cfsTextFloat 8s ease-in-out infinite;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .cfs-fade-up,
+      .cfs-globe-float,
+      .cfs-pulse,
+      .cfs-flow-card,
+            .cfs-animated-line,
+      .cfs-rotate-slow,
+      .cfs-grid-motion,
+      .cfs-particle,
+            .cfs-shine::after,
+      .cfs-title-motion,
+      .cfs-gradient-text,
+      .cfs-soft-float {
+        animation: none !important;
+      }
+    }
+  </style>
 </head>
 <body class="bg-[#F2FAFF] px-4 pt-6 pb-4 font-sans text-slate-950 md:px-8 md:pt-10 md:pb-6" style="margin:0; min-height:0; height:auto; overflow:auto;">
   <section class="relative mx-auto mb-0 max-w-[1500px] overflow-hidden rounded-[36px] border border-sky-100 bg-[linear-gradient(135deg,#ffffff_0%,#f8fdff_46%,#e4f6ff_100%)] px-8 py-10 shadow-[0_30px_90px_rgba(5,38,95,0.10)] md:px-14 md:py-14">
 
-    <div class="pointer-events-none absolute right-[-8%] top-[-8%] hidden h-[620px] w-[720px] lg:block">
+    <div class="absolute inset-0 opacity-70 cfs-grid-motion"></div>
+
+    <div class="pointer-events-none absolute right-[-8%] top-[-8%] hidden h-[620px] w-[720px] lg:block cfs-globe-float">
+      <div class="absolute inset-0 cfs-rotate-slow">
+        <div class="absolute right-[120px] top-[80px] h-[420px] w-[420px] rounded-full border border-sky-200/30"></div>
+        <div class="absolute right-[160px] top-[120px] h-[340px] w-[340px] rounded-full border border-sky-300/20"></div>
+      </div>
+
+      <div class="cfs-particle"></div>
+      <div class="cfs-particle"></div>
+      <div class="cfs-particle"></div>
+      <div class="cfs-particle"></div>
       <div class="absolute right-0 top-0 h-[600px] w-[600px] rounded-full bg-[radial-gradient(circle_at_35%_35%,rgba(255,255,255,0.98),rgba(224,244,255,0.82)_34%,rgba(18,155,239,0.22)_68%,rgba(255,255,255,0)_72%)]"></div>
-      <div class="absolute right-10 top-10 h-[520px] w-[520px] rounded-full border border-sky-200/80"></div>
+      <div class="absolute right-10 top-10 h-[520px] w-[520px] rounded-full border border-sky-200/80 cfs-pulse"></div>
       <div class="absolute right-20 top-20 h-[430px] w-[430px] rounded-full border border-sky-100/90"></div>
     </div>
 
-    <div class="relative z-10 max-w-3xl">
+    <div class="relative z-10 max-w-3xl cfs-fade-up">
       <div class="flex items-center gap-5">
         <svg class="h-16 w-16 shrink-0" viewBox="0 0 126 126">
           <rect x="4" y="4" width="34" height="34" rx="8" fill="#FFFFFF" stroke="#7A7A7A" stroke-width="2"></rect>
@@ -45,11 +255,11 @@
         GLOBAL PAYMENT NETWORK
       </div>
 
-      <h1 class="mt-8 text-6xl font-semibold leading-[0.96] tracking-[-0.055em] text-[#050A1F] md:text-8xl">
+      <h1 class="mt-8 text-6xl font-semibold leading-[0.96] tracking-[-0.055em] text-[#050A1F] md:text-8xl cfs-title-motion">
         Borderless<br />Commerce
       </h1>
 
-      <div class="mt-8 text-2xl font-semibold text-[#129BEF]">
+      <div class="mt-8 text-2xl font-semibold text-[#129BEF] cfs-gradient-text">
         QR・Cross-border・Web3
       </div>
 
@@ -64,19 +274,19 @@
       </p>
     </div>
 
-    <section class="relative z-10 mt-10 rounded-[32px] border border-sky-100 bg-white/88 p-8 shadow-[0_18px_70px_rgba(18,155,239,0.08)] backdrop-blur-md md:p-12">
+    <section class="relative z-10 mt-10 rounded-[32px] cfs-fade-up cfs-delay-1 border border-sky-100 bg-white/88 p-8 shadow-[0_18px_70px_rgba(18,155,239,0.08)] backdrop-blur-md md:p-12">
       <div class="grid gap-10 lg:grid-cols-[0.8fr_2fr] lg:items-start">
         <div>
           <div class="text-sm font-semibold tracking-[0.28em] text-[#129BEF]">
             MISSION / VISION / VALUE
           </div>
-          <div class="mt-8 text-2xl font-medium leading-relaxed text-slate-400">
+          <div class="mt-8 text-2xl font-medium leading-relaxed text-slate-400 cfs-soft-float">
             便利に、合理的に、効率的に。
           </div>
         </div>
 
         <div>
-          <h2 class="max-w-5xl text-5xl font-semibold leading-[1.05] tracking-[-0.06em] text-[#05265F] md:text-7xl">
+          <h2 class="max-w-5xl text-5xl font-semibold leading-[1.05] tracking-[-0.06em] text-[#05265F] md:text-7xl cfs-title-motion">
             真のニーズから、決済・金融の次をつくる。
           </h2>
         </div>
@@ -106,7 +316,7 @@
       </div>
     </section>
 
-    <section class="relative z-10 mt-8 rounded-[32px] bg-white/88 p-8 shadow-[0_18px_70px_rgba(18,155,239,0.10)] ring-1 ring-sky-100 backdrop-blur-md">
+    <section class="relative z-10 mt-8 rounded-[32px] bg-white/88 cfs-fade-up cfs-delay-2 p-8 shadow-[0_18px_70px_rgba(18,155,239,0.10)] ring-1 ring-sky-100 backdrop-blur-md">
       <div class="grid gap-8 lg:grid-cols-3">
         <div class="relative px-8 py-4 lg:border-r lg:border-sky-100">
           <div class="mb-5 flex h-20 w-20 items-center justify-center rounded-[24px] bg-gradient-to-br from-[#129BEF] to-[#2B4CFF] text-4xl font-light text-white shadow-[0_18px_45px_rgba(18,155,239,0.26)]">▦</div>
@@ -146,7 +356,7 @@
       </div>
     </section>
 
-    <section class="relative z-10 mt-8 rounded-[28px] border border-sky-100 bg-white/82 p-8 shadow-sm backdrop-blur">
+    <section class="relative z-10 mt-8 rounded-[28px] border border-sky-100 bg-white/82 cfs-fade-up cfs-delay-3 p-8 shadow-sm backdrop-blur">
       <div class="mb-7 flex items-end justify-between gap-6">
         <div>
           <div class="text-sm font-semibold tracking-[0.22em] text-[#129BEF]">COMPANY INFORMATION</div>
@@ -173,7 +383,7 @@
       </div>
     </section>
 
-    <section class="relative z-10 mt-8 rounded-[28px] border border-sky-100 bg-white/78 p-6 shadow-sm backdrop-blur">
+    <section class="relative z-10 mt-8 rounded-[28px] border border-sky-100 bg-white/78 cfs-fade-up cfs-delay-3 p-6 shadow-sm backdrop-blur">
       <div class="grid gap-6 lg:grid-cols-[1.5fr_1fr] lg:items-center">
         <div class="flex items-start gap-5">
           <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-3xl text-[#129BEF]">⟠</div>
@@ -182,30 +392,30 @@
         <div class="relative flex items-center justify-center">
           <div class="relative flex flex-wrap items-center justify-center gap-4 rounded-[28px] border border-sky-100 bg-[radial-gradient(circle_at_center,#ffffff_0%,#f5fbff_100%)] px-6 py-6 shadow-inner">
 
-            <div class="absolute h-[2px] w-[72%] rounded-full bg-gradient-to-r from-transparent via-sky-300 to-transparent"></div>
-            <div class="absolute h-[72%] w-[2px] rounded-full bg-gradient-to-b from-transparent via-sky-300 to-transparent"></div>
+            <div class="absolute h-[2px] w-[72%] rounded-full bg-gradient-to-r from-transparent via-sky-300 via-[#129BEF] to-transparent cfs-animated-line"></div>
+            <div class="absolute h-[72%] w-[2px] rounded-full bg-gradient-to-b from-transparent via-sky-300 via-[#129BEF] to-transparent cfs-animated-line"></div>
 
-            <div class="relative flex h-24 w-24 flex-col items-center justify-center rounded-3xl border border-sky-100 bg-white shadow-[0_10px_30px_rgba(18,155,239,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(18,155,239,0.18)]">
+            <div class="relative flex h-24 w-24 flex-col items-center justify-center rounded-3xl border border-sky-100 bg-white cfs-flow-card cfs-shine shadow-[0_10px_30px_rgba(18,155,239,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(18,155,239,0.18)]">
               <div class="text-2xl">🌐</div>
               <div class="mt-2 text-center text-xs font-semibold leading-snug text-[#129BEF]">オンライン決済</div>
             </div>
 
-            <div class="relative flex h-24 w-24 flex-col items-center justify-center rounded-3xl border border-sky-100 bg-white shadow-[0_10px_30px_rgba(18,155,239,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(18,155,239,0.18)]">
+            <div class="relative flex h-24 w-24 flex-col items-center justify-center rounded-3xl border border-sky-100 bg-white cfs-flow-card cfs-shine shadow-[0_10px_30px_rgba(18,155,239,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(18,155,239,0.18)]">
               <div class="text-2xl">🏪</div>
               <div class="mt-2 text-center text-xs font-semibold leading-snug text-[#129BEF]">オフライン決済</div>
             </div>
 
-            <div class="relative flex h-24 w-24 flex-col items-center justify-center rounded-3xl border border-sky-100 bg-white shadow-[0_10px_30px_rgba(18,155,239,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(18,155,239,0.18)]">
+            <div class="relative flex h-24 w-24 flex-col items-center justify-center rounded-3xl border border-sky-100 bg-white cfs-flow-card cfs-shine shadow-[0_10px_30px_rgba(18,155,239,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(18,155,239,0.18)]">
               <div class="text-2xl">💸</div>
               <div class="mt-2 text-center text-xs font-semibold leading-snug text-[#129BEF]">送金・精算</div>
             </div>
 
-            <div class="relative flex h-24 w-24 flex-col items-center justify-center rounded-3xl border border-sky-100 bg-white shadow-[0_10px_30px_rgba(18,155,239,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(18,155,239,0.18)]">
+            <div class="relative flex h-24 w-24 flex-col items-center justify-center rounded-3xl border border-sky-100 bg-white cfs-flow-card cfs-shine shadow-[0_10px_30px_rgba(18,155,239,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(18,155,239,0.18)]">
               <div class="text-2xl">✈️</div>
               <div class="mt-2 text-center text-xs font-semibold leading-snug text-[#129BEF]">クロスボーダー</div>
             </div>
 
-            <div class="absolute flex h-20 w-20 items-center justify-center rounded-full border border-sky-200 bg-gradient-to-br from-[#129BEF] to-[#2B4CFF] text-center text-sm font-bold leading-tight text-white shadow-[0_12px_35px_rgba(18,155,239,0.28)]">
+            <div class="absolute flex h-20 w-20 items-center justify-center rounded-full cfs-pulse cfs-shine border border-sky-200 bg-gradient-to-br from-[#129BEF] to-[#2B4CFF] text-center text-sm font-bold leading-tight text-white shadow-[0_12px_35px_rgba(18,155,239,0.28)]">
               Payment<br/>Fusion
             </div>
           </div>
