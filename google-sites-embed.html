@@ -139,10 +139,13 @@
         align-items: center;
         justify-content: center;
         min-height: 48px;
+        border: 0;
         border-radius: 999px;
         padding: 0 24px;
+        font: inherit;
         font-size: 14px;
         font-weight: 800;
+        cursor: pointer;
         transition:
           transform 220ms ease,
           box-shadow 220ms ease,
@@ -162,6 +165,7 @@
 
       .button.secondary {
         border: 1px solid var(--line);
+        background: #fff;
         color: var(--navy);
       }
 
@@ -618,8 +622,8 @@
             </p>
             <p class="english">Creative ideas. Professional expertise. Better financial services.</p>
             <div class="buttons">
-              <a class="button primary" href="#services">業務領域を見る</a>
-              <a class="button secondary" href="#contact">お問い合わせ</a>
+              <button class="button primary" type="button" data-scroll-target="services">業務領域を見る</button>
+              <button class="button secondary" type="button" data-scroll-target="contact">お問い合わせ</button>
             </div>
           </div>
           <div class="visual">
@@ -760,6 +764,18 @@
     </main>
     <script>
       (() => {
+        document.querySelectorAll("[data-scroll-target]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const target = document.getElementById(button.dataset.scrollTarget);
+
+            if (!target) {
+              return;
+            }
+
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        });
+
         const targets = document.querySelectorAll(
           ".section-head, .mission-card, .card, .strength, .company > *, .contact .wrap > *"
         );
