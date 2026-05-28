@@ -7,12 +7,12 @@
     <style>
       :root {
         --ink: #111111;
-        --body: #4a4a4a;
-        --muted: #777777;
-        --teal: #0e8f94;
-        --navy: #102a43;
-        --pale: #f4f8f9;
-        --line: #e3ecef;
+        --body: #46515c;
+        --muted: #6d7884;
+        --teal: #149cea;
+        --navy: #172635;
+        --pale: #f3f9ff;
+        --line: #d8e9f6;
       }
 
       * {
@@ -51,7 +51,7 @@
         overflow: hidden;
         padding: 96px 0 118px;
         background:
-          radial-gradient(circle at 82% 18%, rgba(14, 143, 148, 0.14), transparent 30%),
+          radial-gradient(circle at 82% 18%, rgba(20, 156, 234, 0.14), transparent 30%),
           #ffffff;
       }
 
@@ -61,7 +61,7 @@
         right: -160px;
         width: 520px;
         height: 520px;
-        border: 1px solid rgba(14, 143, 148, 0.16);
+        border: 1px solid rgba(20, 156, 234, 0.16);
         border-radius: 999px;
         content: "";
         animation: haloDrift 14s ease-in-out infinite;
@@ -88,10 +88,11 @@
       h1 {
         margin: 0;
         color: var(--navy);
-        font-size: clamp(62px, 9vw, 112px);
+        font-size: clamp(58px, 7.2vw, 90px);
         font-weight: 800;
-        letter-spacing: -0.065em;
-        line-height: 0.9;
+        letter-spacing: -0.055em;
+        line-height: 0.95;
+        white-space: nowrap;
       }
 
       h1 span {
@@ -139,10 +140,13 @@
         align-items: center;
         justify-content: center;
         min-height: 48px;
+        border: 0;
         border-radius: 999px;
         padding: 0 24px;
+        font: inherit;
         font-size: 14px;
         font-weight: 800;
+        cursor: pointer;
         transition:
           transform 220ms ease,
           box-shadow 220ms ease,
@@ -162,6 +166,7 @@
 
       .button.secondary {
         border: 1px solid var(--line);
+        background: #fff;
         color: var(--navy);
       }
 
@@ -172,7 +177,7 @@
         border: 1px solid var(--line);
         border-radius: 36px;
         background:
-          linear-gradient(150deg, rgba(16, 42, 67, 0.94), rgba(14, 143, 148, 0.92)),
+          linear-gradient(150deg, rgba(16, 42, 67, 0.94), rgba(20, 156, 234, 0.92)),
           var(--navy);
         box-shadow: 0 45px 120px rgba(16, 42, 67, 0.18);
         padding: 32px;
@@ -353,7 +358,7 @@
 
       .card:hover {
         transform: translateY(-6px);
-        border-color: rgba(14, 143, 148, 0.32);
+        border-color: rgba(20, 156, 234, 0.32);
         box-shadow: 0 28px 80px rgba(16, 42, 67, 0.09);
       }
 
@@ -472,6 +477,99 @@
         color: var(--navy);
       }
 
+      .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        border-bottom: 1px solid rgba(227, 236, 239, 0.92);
+        background: rgba(255, 255, 255, 0.94);
+        backdrop-filter: blur(14px);
+      }
+
+      .site-header .wrap,
+      .site-footer .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 28px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--navy);
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        white-space: nowrap;
+      }
+
+      .brand img {
+        display: block;
+        width: 42px;
+        height: 42px;
+        object-fit: contain;
+      }
+
+      .brand-copy {
+        display: grid;
+        gap: 3px;
+        line-height: 1;
+      }
+
+      .brand-name {
+        color: var(--navy);
+        font-size: 18px;
+        font-weight: 900;
+        letter-spacing: 0;
+      }
+
+      .brand-sub {
+        color: var(--teal);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      .site-header nav,
+      .footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        color: var(--body);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .site-header a,
+      .footer-links a {
+        transition: color 180ms ease;
+      }
+
+      .site-header a:hover,
+      .footer-links a:hover {
+        color: var(--teal);
+      }
+
+      .site-header .wrap {
+        min-height: 74px;
+      }
+
+      .site-footer {
+        border-top: 1px solid var(--line);
+        background: #fff;
+        padding: 34px 0;
+      }
+
+      .copyright {
+        margin: 16px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+        text-align: right;
+      }
+
       .hero .eyebrow,
       .hero h1,
       .hero .lead,
@@ -581,8 +679,27 @@
           font-size: 40px;
         }
 
+        h1 {
+          white-space: normal;
+        }
+
         .visual {
           min-height: 430px;
+        }
+
+        .site-header .wrap,
+        .site-footer .wrap {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .copyright {
+          text-align: left;
+        }
+
+        .brand img {
+          width: 38px;
+          height: 38px;
         }
       }
 
@@ -604,6 +721,18 @@
     </style>
   </head>
   <body>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="./index.html"><img src="./assets/cfs-logo-mark.png" alt="CFSロゴ" /><span class="brand-copy"><strong class="brand-name">CFS株式会社</strong><span class="brand-sub">Cross Finance Services</span></span></a>
+        <nav aria-label="Primary">
+          <a href="./index.html">ホーム</a>
+          <a href="./index.html#company">会社概要</a>
+          <a href="./index.html#services">業務領域</a>
+          <a href="./contact.html">問合せ</a>
+        </nav>
+      </div>
+    </header>
+
     <main>
       <section class="hero">
         <div class="wrap hero-grid">
@@ -618,8 +747,8 @@
             </p>
             <p class="english">Creative ideas. Professional expertise. Better financial services.</p>
             <div class="buttons">
-              <a class="button primary" href="#services">業務領域を見る</a>
-              <a class="button secondary" href="#contact">お問い合わせ</a>
+              <button class="button primary" type="button" data-scroll-target="services">業務領域を見る</button>
+              <button class="button secondary" type="button" data-scroll-target="contact">お問い合わせ</button>
             </div>
           </div>
           <div class="visual">
@@ -752,14 +881,41 @@
             </p>
             <p class="sub">Let’s design better financial services together.</p>
             <div class="buttons">
-              <a class="button" href="mailto:contact@cfsjp.com">contact@cfsjp.com</a>
+              <a class="button" href="./contact.html" onclick="window.location.href='./contact.html'; return false;">問い合わせフォームへ</a>
+              <a class="button secondary" href="mailto:contact@cfsjp.com">contact@cfsjp.com</a>
             </div>
           </div>
         </div>
       </section>
     </main>
+    <footer class="site-footer">
+      <div class="wrap">
+        <a class="brand" href="./index.html"><img src="./assets/cfs-logo-mark.png" alt="CFSロゴ" /><span class="brand-copy"><strong class="brand-name">CFS株式会社</strong><span class="brand-sub">Cross Finance Services</span></span></a>
+        <div>
+          <nav class="footer-links" aria-label="Footer">
+            <a href="./privacy-policy.html">プライバシーポリシー</a>
+            <a href="./information-security-policy.html">情報セキュリティ基本方針</a>
+            <a href="./antisocial-policy.html">反社会的勢力に対する基本方針</a>
+            <a href="./aml-cft-policy.html">AML/CFTポリシー</a>
+          </nav>
+          <p class="copyright">Copyright © CFS株式会社 All Rights Reserved.</p>
+        </div>
+      </div>
+    </footer>
     <script>
       (() => {
+        document.querySelectorAll("[data-scroll-target]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const target = document.getElementById(button.dataset.scrollTarget);
+
+            if (!target) {
+              return;
+            }
+
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        });
+
         const targets = document.querySelectorAll(
           ".section-head, .mission-card, .card, .strength, .company > *, .contact .wrap > *"
         );
