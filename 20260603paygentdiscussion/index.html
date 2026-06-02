@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CFS x 銀聯 | ペイジェント様向け協業提案</title>
+<style>
+:root {
+  --brand-blue: #0091ff;
+  --brand-navy: #0f172a;
+  --brand-gray: #475569;
+  --brand-light: #f8fafc;
+  --brand-border: #e2e8f0;
+  --danger: #ef4444;
+  --success: #10b981;
+  --warning: #f59e0b;
+}
+* { box-sizing: border-box; }
+body {
+  background-color: #cbd5e1;
+  font-family: 'Meiryo', 'Hiragino Kaku Gothic ProN', sans-serif;
+  margin: 0;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  color: var(--brand-navy);
+}
+p { margin: 0 0 12px 0; line-height: 1.7; }
+#app-container { display:flex; height:100vh; width:100vw; overflow:hidden; }
+#main-workspace { flex-grow:1; display:flex; flex-direction:column; min-width:0; background:#f1f5f9; }
+#top-toolbar { height:64px; background:#fff; border-bottom:1px solid var(--brand-border); display:flex; align-items:center; justify-content:space-between; padding:0 30px; z-index:10; }
+#stage-viewport { flex-grow:1; display:flex; align-items:center; justify-content:center; padding:40px; overflow:hidden; position:relative; }
+.slide-container {
+  background:#fff; border-radius:8px; box-shadow:0 20px 50px rgba(15,23,42,.12);
+  display:none; flex-direction:column; height:720px; overflow:hidden; padding:55px 80px 45px;
+  position:relative; width:1280px; transform-origin:center center; flex-shrink:0;
+}
+.slide-container.active-slide { display:flex; }
+.slide-container::before {
+  content:''; position:absolute; inset:0; z-index:0;
+  background-image:linear-gradient(to right, rgba(0,145,255,.018) 1px, transparent 1px),
+                   linear-gradient(to bottom, rgba(0,145,255,.018) 1px, transparent 1px);
+  background-size:35px 32px; pointer-events:none;
+}
+.slide-container>* { position:relative; z-index:1; }
+.slide-title { font-size:31px; font-weight:900; margin:0 0 30px; width:100%; border-bottom:3px solid var(--brand-blue); padding-bottom:12px; display:flex; justify-content:space-between; align-items:baseline; }
+.slide-title-en { font-size:12px; font-weight:700; color:var(--brand-blue); letter-spacing:.3em; text-transform:uppercase; }
+.content-area { display:flex; flex-direction:column; flex-grow:1; justify-content:center; width:100%; }
+.two-column { display:grid; grid-template-columns:1fr 1fr; gap:50px; width:100%; align-items:center; }
+.card { background:var(--brand-light); border-radius:12px; border:1px solid var(--brand-border); padding:24px; height:100%; }
+.brand-accent { color:var(--brand-blue); font-weight:900; }
+.footer { position:absolute; bottom:30px; left:80px; right:80px; border-top:1px solid var(--brand-border); padding-top:12px; display:flex; justify-content:space-between; align-items:center; }
+.footer-text { font-size:11px; color:#94a3b8; font-weight:700; letter-spacing:.05em; }
+.page-num { color:var(--brand-blue); font-weight:900; font-size:13px; }
+.toolbar-btn { background:#fff; border:1px solid var(--brand-border); border-radius:6px; padding:8px 16px; font-size:13px; font-weight:700; color:var(--brand-navy); cursor:pointer; display:flex; align-items:center; gap:8px; transition:.2s; }
+.toolbar-btn:hover { background:var(--brand-light); }
+.primary-btn { background:var(--brand-blue); border-color:var(--brand-blue); color:#fff; }
+#bottom-nav { height:64px; background:#fff; border-top:1px solid var(--brand-border); display:flex; align-items:center; justify-content:space-between; padding:0 30px; z-index:10; }
+[contenteditable="true"] { outline:none; transition:background-color .2s; border-radius:4px; }
+[contenteditable="true"]:hover { background:rgba(0,145,255,.04); }
+.kpi { font-weight:900; font-size:46px; line-height:1; color:var(--brand-blue); }
+.badge { display:inline-flex; padding:7px 12px; border-radius:999px; background:#e0f2fe; color:#0369a1; font-weight:900; font-size:13px; }
+.bar-track { background:#f1f5f9; border-radius:4px; height:26px; width:100%; overflow:hidden; }
+.bar-fill-blue { background:linear-gradient(90deg,#0091ff,#60a5fa); height:100%; }
+.flow { display:flex; align-items:center; justify-content:center; gap:16px; }
+.flow-box { background:#fff; border:1.5px solid var(--brand-border); border-radius:14px; padding:18px; text-align:center; min-width:150px; box-shadow:0 8px 18px rgba(15,23,42,.04); }
+.arrow { color:var(--brand-blue); font-size:28px; font-weight:900; }
+.small { font-size:13px; color:var(--brand-gray); line-height:1.65; }
+.check { color:var(--success); font-weight:900; }
+.warn { color:var(--danger); font-weight:900; }
+.partner-logo-row { display:grid; grid-template-columns:210px 38px 210px 38px 210px; align-items:center; justify-content:center; column-gap:10px; margin-bottom:34px; }
+.partner-logo-slot { height:78px; display:flex; align-items:center; justify-content:center; }
+.partner-logo { display:block; object-fit:contain; }
+.partner-logo.unionpay { width:142px; height:64px; }
+.partner-logo.paygent { width:196px; height:48px; }
+.partner-logo.cfs { width:68px; height:68px; }
+.partner-logo-separator { color:#cbd5e1; font-size:28px; font-weight:700; text-align:center; line-height:1; }
+.concept-icon { width:76px; height:76px; margin:0 auto 18px; display:flex; align-items:center; justify-content:center; border-radius:22px; background:linear-gradient(135deg,#e0f2fe,#f8fbff); color:var(--brand-blue); box-shadow:0 12px 26px rgba(0,145,255,.16), inset 0 0 0 1px rgba(0,145,255,.18); }
+.concept-icon.orange { background:linear-gradient(135deg,#fff7ed,#fffaf3); color:#f59e0b; box-shadow:0 12px 26px rgba(245,158,11,.18), inset 0 0 0 1px rgba(245,158,11,.24); }
+.concept-icon.green { background:linear-gradient(135deg,#ecfdf5,#f8fffb); color:#10b981; box-shadow:0 12px 26px rgba(16,185,129,.18), inset 0 0 0 1px rgba(16,185,129,.24); }
+.concept-icon svg { width:48px; height:48px; stroke:currentColor; stroke-width:2.15; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+.concept-icon .fill-soft { fill:currentColor; opacity:.16; stroke:none; }
+.flow-box h3 { margin:0 0 8px; }
+.gap-card { width:280px!important; height:220px!important; display:flex!important; flex-direction:column; align-items:center; justify-content:center; padding:22px 18px!important; }
+.gap-card h3 { font-size:25px!important; line-height:1.18!important; white-space:nowrap; margin:0 0 12px; }
+.gap-card .small { max-width:220px; margin:0; font-size:13px!important; line-height:1.5!important; }
+.company-logo-panel { height:62px; margin:0 auto 16px; display:flex; align-items:center; justify-content:center; }
+.company-logo-panel img { display:block; max-width:170px; max-height:58px; object-fit:contain; }
+.company-logo-panel.kawai img { width:148px; max-height:40px; }
+.company-logo-panel.paygent img { width:166px; max-height:42px; }
+.company-logo-panel.cfs img { width:58px; height:58px; }
+.auth-visual { background:linear-gradient(135deg,#0f172a,#1e293b); border-radius:16px; height:390px; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:38px; text-align:center; }
+.auth-flow { display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:26px; width:100%; }
+.auth-step { width:118px; min-height:108px; border:1px solid rgba(255,255,255,.18); border-radius:14px; background:rgba(255,255,255,.08); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:14px 10px; color:#e2e8f0; }
+.auth-step svg { width:34px; height:34px; margin-bottom:10px; stroke:#60a5fa; stroke-width:2.2; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+.auth-step b { font-size:14px; line-height:1.35; }
+.auth-arrow { color:#60a5fa; font-weight:900; font-size:24px; }
+.photo-visual { height:390px; border-radius:18px; overflow:hidden; position:relative; box-shadow:0 18px 36px rgba(15,23,42,.14); background:#0f172a; }
+.photo-visual img { width:100%; height:100%; object-fit:cover; display:block; }
+.photo-visual::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(15,23,42,.02),rgba(15,23,42,.55)); }
+.photo-caption { position:absolute; left:28px; right:28px; bottom:26px; z-index:1; color:#fff; text-align:left; }
+.photo-caption h4 { color:#fff; margin:0 0 8px; font-size:22px; }
+.photo-caption p { color:#dbeafe; margin:0; font-size:14px!important; line-height:1.65!important; }
+.slide-container p { font-size:16px !important; line-height:1.75 !important; }
+.slide-container .small { font-size:13.5px !important; line-height:1.7 !important; }
+.slide-container h1 { font-size:54px !important; line-height:1.22 !important; }
+.slide-container h3 { font-size:29px !important; line-height:1.35 !important; }
+.slide-container h4 { font-size:18px !important; line-height:1.45 !important; }
+.slide-container table { font-size:15.5px !important; }
+.slide-container .footer-text { font-size:11px !important; }
+.slide-container .page-num { font-size:13px !important; }
+@media print {
+  @page { size: A4 landscape; margin: 0; }
+  html { width:297mm; height:auto; margin:0; padding:0; }
+  body { background:#fff; overflow:visible; }
+  #top-toolbar,#bottom-nav,.no-print { display:none!important; }
+  #app-container,#main-workspace,#stage-viewport { display:block; height:auto; width:297mm; margin:0; padding:0; overflow:visible; background:#fff; }
+  .slide-container { display:flex!important; width:297mm!important; height:210mm!important; margin:0!important; page-break-after:always!important; break-after:page!important; transform:scale(1)!important; box-shadow:none; border-radius:0; }
+  .slide-container img, .photo-visual, .photo-visual img { print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+}
+</style>
+</head>
+<body>
+<div id="app-container">
+<div id="main-workspace">
+<header id="top-toolbar">
+  <div id="toolbar-title-display" style="font-weight:700;font-size:14px;"></div>
+  <div style="display:flex;gap:10px;">
+    <button class="toolbar-btn primary-btn" onclick="executePrint()">PDF出力</button>
+  </div>
+</header>
+
+<main id="stage-viewport">
+
+<div class="slide-container" id="slide1">
+  <div class="content-area" style="align-items:center;text-align:center;">
+    <div class="partner-logo-row">
+      <div class="partner-logo-slot"><img class="partner-logo paygent" src="assets/paygent-logo.webp" alt="PAYGENT"></div>
+      <div class="partner-logo-separator">×</div>
+      <div class="partner-logo-slot"><img class="partner-logo unionpay" src="assets/unionpay-logo-cropped.jpg" alt="UnionPay"></div>
+      <div class="partner-logo-separator">×</div>
+      <div class="partner-logo-slot"><img class="partner-logo cfs" src="assets/cfs-logo-mark.png" alt="CFS"></div>
+    </div>
+    <p contenteditable="true" class="brand-accent" style="letter-spacing:.4em;text-transform:uppercase;font-size:14px;font-weight:900;">Discussion Paper</p>
+    <h1 contenteditable="true" style="font-size:48px;line-height:1.25;margin:10px 0 20px;font-weight:900;">ペイジェント様向け<br>銀聯EC決済 早期提供のご相談</h1>
+    <p contenteditable="true" style="font-size:20px;color:#64748b;">〜 KEIアドバンス様を起点とした、銀聯EC決済の早期開始に向けて 〜</p>
+    <div style="margin-top:42px;display:flex;gap:14px;align-items:center;">
+      <span class="badge">本日はお時間をいただき、誠にありがとうございます</span>
+    </div>
+  </div>
+  <div class="footer"><span class="footer-text">For Discussion Purpose Only</span><span class="page-num">01 / 13</span></div>
+</div>
+
+<div class="slide-container" id="slide2">
+  <h2 class="slide-title"><span contenteditable="true">市場分析：中国人留学生 1,543億円の決済需要</span><span class="slide-title-en">Market Analysis</span></h2>
+  <div class="content-area">
+    <div class="two-column" style="gap:40px;">
+      <div>
+        <h3 contenteditable="true" style="font-size:32px;line-height:1.3;margin:0 0 20px;">中国人留学生市場の<br>圧倒的ポテンシャル</h3>
+        <p contenteditable="true" style="font-size:15px;">日本の留学生市場において、中国人留学生は大きな比率を占めています。大学・専門学校・日本語学校における年間学費決済は、推計で<b>1,543億円規模</b>に達します。</p>
+        <p contenteditable="true" style="font-size:14px;color:var(--brand-gray);">教育機関にとって、海外からの学費回収を安全・確実・効率的に行う仕組みは、今後さらに重要な経営インフラになります。</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:20px;padding:25px;background:var(--brand-light);border-radius:16px;border:1px solid var(--brand-border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <span style="font-size:11px;color:var(--brand-gray);font-weight:700;text-transform:uppercase;">中国人留学生の推計学費規模</span>
+          <span style="font-size:14px;color:var(--brand-blue);font-weight:900;">総計 1,543 億円</span>
+        </div>
+        <div>
+          <p style="font-size:12px;font-weight:700;margin-bottom:5px;">大学・専門学校等：1,125 億円</p>
+          <div class="bar-track"><div class="bar-fill-blue" style="width:72.9%;"></div></div>
+        </div>
+        <div>
+          <p style="font-size:12px;font-weight:700;margin-bottom:5px;">日本語学校：418 億円</p>
+          <div class="bar-track"><div class="bar-fill-blue" style="width:27.1%;background:#60a5fa;"></div></div>
+        </div>
+        <div style="margin-top:14px;padding-top:16px;border-top:1px dashed var(--brand-border);display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="card" style="padding:16px;text-align:center;background:#fff;"><div class="kpi">73%</div><div class="small">大学・専門学校等</div></div>
+          <div class="card" style="padding:16px;text-align:center;background:#fff;"><div class="kpi" style="color:#60a5fa;">27%</div><div class="small">日本語学校</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span class="footer-text">MARKET DATA</span><span class="page-num">02 / 13</span></div>
+</div>
+
+<div class="slide-container" id="slide3">
+  <h2 class="slide-title"><span contenteditable="true">海外送金が抱える構造的課題</span><span class="slide-title-en">Current Issues</span></h2>
+  <div class="content-area">
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:25px;">
+      <div class="card" style="border-top:4px solid var(--danger);display:flex;gap:20px;">
+        <div style="font-size:34px;">⏱️</div><div><h4 contenteditable="true" style="font-size:16px;margin:0 0 8px;">時間的制約</h4><p contenteditable="true" class="small">海外送金では着金まで数日を要し、締切直前の支払い確認に時間差が発生します。</p></div>
+      </div>
+      <div class="card" style="border-top:4px solid var(--danger);display:flex;gap:20px;">
+        <div style="font-size:34px;">🔍</div><div><h4 contenteditable="true" style="font-size:16px;margin:0 0 8px;">突合事務の膨大化</h4><p contenteditable="true" class="small">アルファベット名義、送金人名義の不一致により、学校側の入金照合作業が煩雑化します。</p></div>
+      </div>
+      <div class="card" style="border-top:4px solid var(--danger);display:flex;gap:20px;">
+        <div style="font-size:34px;">💸</div><div><h4 contenteditable="true" style="font-size:16px;margin:0 0 8px;">不透明な手数料</h4><p contenteditable="true" class="small">送金銀行・中継銀行・受取銀行で手数料が発生し、学生・学校双方にコスト負担が残ります。</p></div>
+      </div>
+      <div class="card" style="border-top:4px solid var(--danger);display:flex;gap:20px;">
+        <div style="font-size:34px;">⚠️</div><div><h4 contenteditable="true" style="font-size:16px;margin:0 0 8px;">決済完了の不確実性</h4><p contenteditable="true" class="small">支払完了をリアルタイムに確認できず、入学手続・学費管理に遅延リスクが生じます。</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span class="footer-text">TRADITIONAL REMITTANCE LIMITATIONS</span><span class="page-num">03 / 13</span></div>
+</div>
+
+<div class="slide-container" id="slide4">
+  <h2 class="slide-title"><span contenteditable="true">決済化による解決と銀聯の強み</span><span class="slide-title-en">UnionPay Strength</span></h2>
+  <div class="content-area">
+    <div class="two-column">
+      <div style="display:flex;flex-direction:column;gap:18px;">
+        <div class="card" style="border-left:6px solid var(--brand-blue);">
+          <h4 contenteditable="true" style="font-weight:900;margin:0 0 10px;">中国人学生・保護者にとっての高い認知度</h4>
+          <p contenteditable="true" class="small">銀聯は中国の銀行カードネットワークとして広く利用されており、学費のような高額支払いに加え、越境EC・一般ECでも安心感があります。</p>
+        </div>
+        <div class="card" style="border-left:6px solid var(--brand-blue);">
+          <h4 contenteditable="true" style="font-weight:900;margin:0 0 10px;">EC決済・3DSによる安全性</h4>
+          <p contenteditable="true" class="small">オンライン学費決済において、本人認証を含む3DS対応により、安全な高額決済を実現できます。</p>
+        </div>
+        <div class="card" style="border-left:6px solid var(--brand-blue);">
+          <h4 contenteditable="true" style="font-weight:900;margin:0 0 10px;">学校側の入金管理DX</h4>
+          <p contenteditable="true" class="small">学籍番号・申込番号と決済情報を紐づけることで、入金確認を即時化・自動化できます。</p>
+        </div>
+      </div>
+      <div class="photo-visual">
+        <img src="assets/payment-security-photo.png" alt="オンライン決済と本人認証のイメージ写真" loading="eager" decoding="sync" fetchpriority="high">
+        <div class="photo-caption">
+          <h4 contenteditable="true">銀聯EC 3Dセキュア対応</h4>
+          <p contenteditable="true">教育機関に求められる「安全性」「確実性」「照合性」を兼ね備えた、中国人留学生向けの有力な決済手段。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span class="footer-text">PAYMENT TRANSFORMATION</span><span class="page-num">04 / 13</span></div>
+</div>
+
+<div class="slide-container" id="slide5">
+  <h2 class="slide-title"><span contenteditable="true">Paygent × 銀聯 × CFS：銀聯EC決済の早期展開に向けて</span><span class="slide-title-en">Joint Promotion</span></h2>
+  <div class="content-area">
+    <div style="background:#fff;border:2.5px dashed var(--brand-blue);border-radius:20px;padding:42px;text-align:center;">
+      <div class="partner-logo-row" style="margin-bottom:28px;">
+        <div class="partner-logo-slot"><img class="partner-logo paygent" src="assets/paygent-logo.webp" alt="PAYGENT"></div>
+        <div class="partner-logo-separator">×</div>
+        <div class="partner-logo-slot"><img class="partner-logo unionpay" src="assets/unionpay-logo-cropped.jpg" alt="UnionPay"></div>
+        <div class="partner-logo-separator">×</div>
+        <div class="partner-logo-slot"><img class="partner-logo cfs" src="assets/cfs-logo-mark.png" alt="CFS"></div>
+      </div>
+      <h3 contenteditable="true" style="font-size:26px;margin:0 0 22px;font-weight:900;">KEIアドバンス様をきっかけに、銀聯EC決済の早期開始へつなげる</h3>
+      <p contenteditable="true" style="font-size:17px;color:#475569;max-width:950px;margin:0 auto;line-height:1.8;">Paygent様は学費に限らず、通常のEC決済を幅広く展開されています。CFSは教育・学費領域での実務接点を持ちながら、銀聯アクワイアリングの仕組みを全体でもパーツごとでも提供できる形で、早期導入をご支援したいと考えています。</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:24px;">
+      <div class="card" style="padding:18px;text-align:center;background:#fff;"><b class="brand-accent">起点案件</b><p class="small">KEIアドバンス様の導入ニーズ</p></div>
+      <div class="card" style="padding:18px;text-align:center;background:#fff;"><b class="brand-accent">早期開始</b><p class="small">銀聯EC・3DS対応基盤</p></div>
+      <div class="card" style="padding:18px;text-align:center;background:#fff;"><b class="brand-accent">横展開</b><p class="small">学費以外のEC決済にも展開可能</p></div>
+    </div>
+  </div>
+  <div class="footer"><span class="footer-text">EDUCATION PAYMENT INITIATIVE</span><span class="page-num">05 / 13</span></div>
+</div>
+
+<div class="slide-container" id="slide6">
+  <h2 class="slide-title"><span contenteditable="true">CFS会社紹介：教育分野向けの決済基盤を提供</span><span class="slide-title-en">Company Profile</span></h2>
+  <div class="content-area">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:30px;">
+      <div class="card" style="background:#fff;border:1.5px solid var(--brand-border);">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
+          <img src="assets/cfs-logo-mark.png" alt="CFS" style="height:54px;width:54px;object-fit:contain;">
+          <h3 contenteditable="true" style="font-size:24px;margin:0;">CFS株式会社</h3>
+        </div>
+        <table style="width:100%;font-size:14px;border-collapse:collapse;">
+          <tr style="border-bottom:1px solid #edf2f7;"><th style="text-align:left;padding:16px 0;font-weight:900;width:32%;">商号</th><td>CFS株式会社</td></tr>
+          <tr style="border-bottom:1px solid #edf2f7;"><th style="text-align:left;padding:16px 0;font-weight:900;">代表者</th><td>CEO 富永 博文</td></tr>
+          <tr style="border-bottom:1px solid #edf2f7;"><th style="text-align:left;padding:16px 0;font-weight:900;">主な事業</th><td>収納代行、決済システム、コンサルティング、開発支援</td></tr>
+          <tr><th style="text-align:left;padding:16px 0;font-weight:900;">URL</th><td style="color:var(--brand-blue);font-weight:700;">https://www.cfsjp.com</td></tr>
+        </table>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="card" style="border-top:4px solid var(--brand-blue);"><h4 style="margin:0 0 10px;">銀聯決済</h4><p class="small">EC・店頭双方での銀聯決済導入を支援。</p></div>
+        <div class="card" style="border-top:4px solid var(--brand-blue);"><h4 style="margin:0 0 10px;">PayMaster</h4><p class="small">WeChat Payを含めたQR決済中心の決済基盤。</p></div>
+        <div class="card" style="border-top:4px solid var(--brand-blue);"><h4 style="margin:0 0 10px;">開発支援</h4><p class="small">決済連携・API接続・管理画面連携の実装支援。</p></div>
+        <div class="card" style="border-top:4px solid var(--brand-blue);"><h4 style="margin:0 0 10px;">運用支援</h4><p class="small">精算、返金、取消、問い合わせ対応を含む実務支援。</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span class="footer-text">CFS CORPORATE OVERVIEW</span><span class="page-num">06 / 13</span></div>
+</div>
+
+<div class="slide-container" id="slide7">
+  <h2 class="slide-title"><span contenteditable="true">CFS導入価値：学校法人の実務改革メリット</span><span class="slide-title-en">School Benefits</span></h2>
+  <div class="content-area">
+    <div style="display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;">
+      <div style="display:flex;flex-direction:column;gap:15px;">
+        <div class="card" style="border-top:6px solid var(--brand-blue);padding:25px;"><h4 contenteditable="true" style="font-size:18px;margin:0 0 8px;">入金突合の効率化</h4><p contenteditable="true" class="small">支払時に学籍番号・申込番号を取得し、学校側の管理情報と連携することで、海外送金で発生していた手作業照合を大幅に削減できます。</p></div>
+        <div class="card" style="border-top:6px solid var(--brand-blue);padding:25px;"><h4 contenteditable="true" style="font-size:18px;margin:0 0 8px;">支払完了の即時把握</h4><p contenteditable="true" class="small">決済完了後、ステータスを即時確認できるため、入学手続や学費管理の遅延リスクを抑制できます。</p></div>
+      </div>
+      <div style="background:var(--brand-light);border:1px solid var(--brand-border);border-radius:16px;padding:40px;height:350px;display:flex;flex-direction:column;justify-content:space-between;">
+        <p style="font-size:12px;color:var(--brand-gray);font-weight:700;text-align:center;">海外送金から決済化へ</p>
+        <div class="flow">
+          <div class="flow-box" style="background:#fef2f2;border-color:#fee2e2;"><span class="warn">従来</span><h4>数日</h4><p class="small">手作業照合</p></div>
+          <div class="arrow">→</div>
+          <div class="flow-box" style="background:#f0f9ff;border-color:#e0f2fe;"><span class="brand-accent">銀聯EC</span><h4>即時</h4><p class="small">決済情報連携</p></div>
+        </div>
+        <p class="small" style="text-align:center;border-top:1px dashed var(--brand-border);padding-top:15px;">学校側の管理負担を減らし、留学生・保護者の支払体験を改善します。</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span class="footer-text">For Discussion Purpose Only</span><span class="page-num">07 / 13</span></div>
+</div>
+
+<div class="slide-container" id="slide8">
+  <h2 class="slide-title"><span contenteditable="true">CFSの提供可能な機能</span><span class="slide-title-en">Capabilities</span></h2>
+  <div class="content-area">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px;">
+      <div class="card" style="border-top:5px solid var(--brand-blue);"><h4>01. 銀聯EC決済</h4><p class="small">学費決済を起点に、一般ECでの銀聯オンライン決済にも展開可能。</p></div>
+      <div class="card" style="border-top:5px solid var(--brand-blue);"><h4>02. 3DS対応</h4><p class="small">EC決済に必要な本人認証を含む決済フローを提供。</p></div>
+      <div class="card" style="border-top:5px solid var(--brand-blue);"><h4>03. 柔軟な提供範囲</h4><p class="small">アクワイアリングライセンスから、決済基盤、決済機能のパーツまで柔軟に提供可能。</p></div>
+      <div class="card" style="border-top:5px solid var(--brand-blue);"><h4>04. 取引管理</h4><p class="small">決済結果、取引明細、入金照合に必要な情報を管理。</p></div>
+      <div class="card" style="border-top:5px solid var(--brand-blue);"><h4>05. 返金・取消</h4><p class="small">教育機関の実務で必要となる返金・取消運用にも対応。</p></div>
+      <div class="card" style="border-top:5px solid var(--brand-blue);"><h4>06. API連携</h4><p class="small">Paygent様の既存EC決済導線に合わせ、必要機能だけを組み込む方式も協議可能。</p></div>
+    </div>
+  </div>
+  <div class="footer"><span class="footer-text">IMPLEMENTATION CAPABILITY</span><span class="page-num">08 / 13</span></div>
+</div>
+
+<div class="slide-container" id="slide9">
+  <h2 class="slide-title"><span contenteditable="true">KEIアドバンス様のご要望と現状課題</span><span class="slide-title-en">Case Understanding</span></h2>
+  <div class="content-area">
+    <div class="two-column" style="gap:50px;">
+      <div>
+        <span class="badge">河合塾グループ関連会社</span>
+        <h3 contenteditable="true" style="font-size:28px;line-height:1.35;margin:20px 0;">銀聯EC決済では3DS対応が必要</h3>
+        <p contenteditable="true" style="font-size:15px;">KEIアドバンス様では、学費等のオンライン支払いにおいて、銀聯決済の導入ニーズがあります。一方、銀聯EC決済では3Dセキュア対応が重要な前提となります。</p>
+        <p contenteditable="true" style="font-size:13px;color:var(--brand-gray);">Paygent様は学費に限らず通常のEC決済も幅広く展開されているため、本件を銀聯EC決済の早期開始に向けた具体的なきっかけとして位置づけられると考えています。</p>
+      </div>
+      <div class="card" style="background:#fff;border:1.5px solid var(--brand-border);">
+        <p style="font-size:12px;color:#ef4444;font-weight:900;margin-bottom:18px;">現状のボトルネック</p>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div class="card" style="padding:16px;background:#fef2f2;border-color:#fee2e2;"><b>Paygent様</b><p class="small">幅広いEC決済基盤の中で、銀聯ECの早期提供余地を検討</p></div>
+          <div class="card" style="padding:16px;background:#fff7ed;border-color:#fed7aa;"><b>KEIアドバンス様</b><p class="small">銀聯導入希望に対して早期回答が必要</p></div>
+          <div class="card" style="padding:16px;background:#f8fafc;"><b>CFS</b><p class="small">銀聯アクワイアリング機能を全体・部分いずれでも提供可能</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span class="footer-text">KEI ADVANCE CASE</span><span class="page-num">09 / 13</span></div>
+</div>
+
+<div class="slide-container" id="slide10">
+  <h2 class="slide-title"><span contenteditable="true">現状整理：三者のニーズとギャップ</span><span class="slide-title-en">Current Gap</span></h2>
+  <div class="content-area">
+    <div class="flow" style="gap:20px;">
+      <div class="flow-box gap-card">
+        <div class="company-logo-panel kawai"><img src="assets/kawaijuku-logo.svg" alt="河合塾"></div><h3>KEIアドバンス様</h3><p class="small">銀聯EC決済を早期導入したい</p>
+      </div>
+      <div class="arrow">→</div>
+      <div class="flow-box gap-card" style="background:#fff7ed;border-color:#fed7aa;">
+        <div class="company-logo-panel paygent"><img src="assets/paygent-logo.webp" alt="Paygent"></div><h3>Paygent様</h3><p class="small">通常EC決済も幅広く展開している</p>
+      </div>
+      <div class="arrow">→</div>
+      <div class="flow-box gap-card" style="background:#f0f9ff;border-color:#bae6fd;">
+        <div class="company-logo-panel cfs"><img src="assets/cfs-logo-mark.png" alt="CFS"></div><h3>CFS</h3><p class="small">銀聯ECアクワイアリングを全体・部分で提供可能</p>
+      </div>
+    </div>
+    <div style="margin-top:40px;background:#f8fafc;border:1px solid var(--brand-border);border-radius:16px;padding:30px;text-align:center;">
+      <h3 contenteditable="true" style="font-size:28px;line-height:1.45;margin:0;color:var(--brand-navy);">KEIをきっかけに、CFSの銀聯アクワイアリング機能を活用して銀聯EC決済の早期開始につなげられないか</h3>
+    </div>
+  </div>
+  <div class="footer"><span class="footer-text">BRIDGE OPPORTUNITY</span><span class="page-num">10 / 13</span></div>
+</div>
+
+<div class="slide-container" id="slide11">
+  <h2 class="slide-title"><span contenteditable="true">本日の目的：早期銀聯EC決済導入についてのディスカッション</span><span class="slide-title-en">Today's Objective</span></h2>
+  <div class="content-area" style="align-items:center;text-align:center;">
+    <div class="card" style="max-width:930px;height:auto;border:2px solid var(--brand-blue);background:#fff;padding:42px;">
+      <h3 contenteditable="true" style="font-size:25px;margin:0 0 20px;">銀聯アクワイアリング機能を活用した早期開始の可能性</h3>
+      <p contenteditable="true" style="text-align:left;font-size:15px;">Paygent様が幅広く展開されているEC決済の中に、CFSの銀聯ECアクワイアリング・3DS対応基盤を全体または必要なパーツとして組み込むことで、KEIアドバンス様を起点に銀聯EC決済を早期開始できないか、ディスカッションさせていただきたく存じます。</p>
+      <p contenteditable="true" style="text-align:left;font-size:22px!important;line-height:1.55!important;font-weight:900;color:var(--brand-blue);">本提案は、Paygent様の既存EC決済事業を補完し、将来的な正式対応・横展開につなげるための協業案です。</p>
+    </div>
+  </div>
+  <div class="footer"><span class="footer-text">DISCUSSION PURPOSE</span><span class="page-num">11 / 13</span></div>
+</div>
+
+<div class="slide-container" id="slide12">
+  <h2 class="slide-title"><span contenteditable="true">ディスカッションペーパー：提供方式のご選択（叩き台）</span><span class="slide-title-en">Implementation Options</span></h2>
+  <div class="content-area">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
+      <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;border-top:4px solid var(--brand-blue);">
+        <div><h4 contenteditable="true" style="color:var(--brand-blue);font-size:16px;">1) CFS基盤の全体活用</h4><p contenteditable="true" class="small">Paygent様の窓口のもと、銀聯EC決済についてCFSのアクワイアリング・3DS対応基盤を一体で活用。</p></div>
+        <div style="background:#e0f2fe;padding:12px;border-radius:6px;font-size:11px;font-weight:700;color:#0369a1;text-align:center;">開発：極小〜不要<br><span style="font-weight:400;color:#475569;">KEI向けに早期開始しやすい方式</span></div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;border-top:4px solid var(--warning);">
+        <div><h4 contenteditable="true" style="color:#b45309;font-size:16px;">2) パーツ/API連携モデル</h4><p contenteditable="true" class="small">Paygent様の既存EC導線内で、必要な銀聯アクワイアリング・3DS機能だけをCFS側から提供。</p></div>
+        <div style="background:#fef3c7;padding:12px;border-radius:6px;font-size:11px;font-weight:700;color:#b45309;text-align:center;">開発：必要<br><span style="font-weight:400;color:#475569;">UX・ブランド統一感を維持</span></div>
+      </div>
+      <div class="card" style="background:var(--brand-navy);color:#fff;display:flex;flex-direction:column;justify-content:center;text-align:center;">
+        <h4 contenteditable="true" style="color:var(--brand-blue);font-size:18px;">3) その他オプション</h4>
+        <p contenteditable="true" style="font-size:12px;color:#94a3b8;line-height:1.7;">KEI向けの早期開始から、学費以外のEC決済への横展開まで、契約関係・精算方式・運用フローに応じて個別協議。</p>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span class="footer-text">DISCUSSION PAPER</span><span class="page-num">12 / 13</span></div>
+</div>
+
+<div class="slide-container" id="slide13">
+  <h2 class="slide-title"><span contenteditable="true">Paygent様にとっての期待メリット</span><span class="slide-title-en">Next Step</span></h2>
+  <div class="content-area">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:34px;">
+      <div class="card" style="padding:18px;border-top:4px solid var(--brand-blue);"><h4 style="font-size:14px;">顧客維持</h4><p class="small">KEIアドバンス様の要望に早期回答</p></div>
+      <div class="card" style="padding:18px;border-top:4px solid var(--brand-blue);"><h4 style="font-size:14px;">横展開</h4><p class="small">学費以外のEC決済にも展開</p></div>
+      <div class="card" style="padding:18px;border-top:4px solid var(--brand-blue);"><h4 style="font-size:14px;">工数抑制</h4><p class="small">正式開発までのリソース負荷を軽減</p></div>
+      <div class="card" style="padding:18px;border-top:4px solid var(--brand-blue);"><h4 style="font-size:14px;">部分活用</h4><p class="small">必要な機能だけを組み込み可能</p></div>
+      <div class="card" style="padding:18px;border-top:4px solid var(--brand-blue);"><h4 style="font-size:14px;">先行収益</h4><p class="small">待機期間中の取扱機会を確保</p></div>
+    </div>
+    <div style="text-align:center;background:#0f172a;border-radius:18px;padding:38px;">
+      <h2 contenteditable="true" style="font-size:32px;color:#fff;margin:0 0 15px;">まずは実現可能な提供方式を一緒に検討させてください</h2>
+      <p contenteditable="true" style="color:#94a3b8;font-size:15px;">本日は貴重なお時間をいただき、誠にありがとうございます。</p>
+    </div>
+  </div>
+  <div class="footer"><span class="footer-text">© CFS INC. 2026</span><span class="page-num">13 / 13</span></div>
+</div>
+
+</main>
+
+<footer id="bottom-nav">
+  <div style="font-size:11px;color:var(--brand-gray);">左右キーで操作。文字は直接編集・自動保存されます。</div>
+  <div style="display:flex;align-items:center;gap:15px;">
+    <button class="toolbar-btn" onclick="prevSlide()">戻る</button>
+    <span id="slide-index-display" style="font-weight:700;"></span>
+    <button class="toolbar-btn primary-btn" onclick="nextSlide()">次へ</button>
+  </div>
+</footer>
+</div>
+
+</div>
+
+<script>
+function waitForDeckImages(){
+  var images = Array.prototype.slice.call(document.querySelectorAll('img'));
+  return Promise.all(images.map(function(img){
+    if (img.complete && img.naturalWidth > 0) {
+      return img.decode ? img.decode().catch(function(){}) : Promise.resolve();
+    }
+    return new Promise(function(resolve){
+      img.addEventListener('load', function(){
+        if (img.decode) img.decode().catch(function(){}).then(resolve);
+        else resolve();
+      }, {once:true});
+      img.addEventListener('error', resolve, {once:true});
+    });
+  }));
+}
+function executePrint(){
+  waitForDeckImages().then(function(){
+    setTimeout(function(){ window.print(); }, 150);
+  });
+}
+var DECK_DATA = [
+  {title:"P01: ご挨拶・本日の趣旨"},
+  {title:"P02: 中国人留学生市場"},
+  {title:"P03: 海外送金の課題"},
+  {title:"P04: 決済化と銀聯の強み"},
+  {title:"P05: Paygent×銀聯×CFS推進体制"},
+  {title:"P06: CFS会社紹介"},
+  {title:"P07: 学校法人への価値"},
+  {title:"P08: CFS提供可能機能"},
+  {title:"P09: KEIアドバンス課題"},
+  {title:"P10: 三者のギャップ"},
+  {title:"P11: 本日の目的"},
+  {title:"P12: 提供方式の叩き台"},
+  {title:"P13: 期待メリット"}
+];
+var currentSlide = 1;
+var totalSlides = DECK_DATA.length;
+
+function initPresentation(){
+  document.addEventListener('keydown', handleKeyNavigation);
+  showSlide(1);
+}
+function showSlide(slideNum){
+  if(slideNum<1||slideNum>totalSlides)return;
+  var old=document.getElementById("slide"+currentSlide);
+  if(old) old.classList.remove('active-slide');
+  currentSlide=slideNum;
+  document.getElementById("slide"+currentSlide).classList.add('active-slide');
+  document.getElementById('slide-index-display').innerText=currentSlide+" / "+totalSlides;
+  document.getElementById('toolbar-title-display').innerText=DECK_DATA[currentSlide-1].title;
+  setTimeout(adjustScale,30);
+}
+function handleKeyNavigation(e){
+  if(e.target.hasAttribute('contenteditable')) return;
+  if(e.key==='ArrowRight'||e.key===' ') nextSlide();
+  else if(e.key==='ArrowLeft') prevSlide();
+}
+function nextSlide(){ if(currentSlide<totalSlides) showSlide(currentSlide+1); }
+function prevSlide(){ if(currentSlide>1) showSlide(currentSlide-1); }
+function adjustScale(){
+  var viewport=document.getElementById('stage-viewport');
+  var activeContainer=document.querySelector('.slide-container.active-slide');
+  if(!viewport||!activeContainer) return;
+  var scale=Math.min((viewport.clientWidth-40)/1280,(viewport.clientHeight-40)/720,1);
+  activeContainer.style.transform="scale("+scale+")";
+}
+document.addEventListener('DOMContentLoaded',function(){
+  waitForDeckImages();
+  document.querySelectorAll('[contenteditable="true"]').forEach(function(element,index){
+    var saved=localStorage.getItem("cfs-paygent-v1-"+index);
+    if(saved) element.innerHTML=saved;
+    element.addEventListener('input',function(){
+      localStorage.setItem("cfs-paygent-v1-"+index,element.innerHTML);
+    });
+  });
+});
+function clearAllEdits(){ if(confirm("編集内容をリセットしますか？")){ Object.keys(localStorage).filter(k=>k.startsWith("cfs-paygent-v1-")).forEach(k=>localStorage.removeItem(k)); location.reload(); } }
+window.addEventListener('resize', adjustScale);
+initPresentation();
+</script>
+</body>
+</html>
