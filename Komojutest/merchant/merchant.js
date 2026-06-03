@@ -4,6 +4,7 @@ const merchantHistory = document.querySelector("#merchantHistory");
 const refreshMerchantHistory = document.querySelector("#refreshMerchantHistory");
 const billingTypeInput = document.querySelector("#billingTypeInput");
 const periodField = document.querySelector(".merchant-period-field");
+const consumerBaseUrlInput = document.querySelector("#consumerBaseUrlInput");
 
 const yen = new Intl.NumberFormat("ja-JP", {
   style: "currency",
@@ -25,6 +26,14 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function normalizeUrl(value) {
+  try {
+    return new URL(value).href;
+  } catch {
+    return new URL(value, window.location.href).href;
+  }
+}
+
 function buildCheckoutUrl(data) {
   const params = new URLSearchParams({
     merchantName: data.merchantName,
@@ -33,7 +42,9 @@ function buildCheckoutUrl(data) {
     billingType: data.billingType,
   });
   if (data.billingType === "subscription") params.set("period", data.period);
-  return `${new URL("../consumer/", window.location.href).href}?${params.toString()}`;
+  const baseUrl = new URL(normalizeUrl(data.consumerBaseUrl));
+  baseUrl.search = params.toString();
+  return baseUrl.href;
 }
 
 function syncPeriodField() {
@@ -45,6 +56,7 @@ function readForm() {
   return {
     merchantName: String(form.get("merchantName") || "").trim(),
     productName: String(form.get("productName") || "").trim(),
+    consumerBaseUrl: String(form.get("consumerBaseUrl") || "").trim(),
     amount: Number(form.get("amount")),
     billingType: form.get("billingType"),
     period: form.get("period") || "monthly",
@@ -53,6 +65,10 @@ function readForm() {
 
 function renderQr(data) {
   const checkoutUrl = buildCheckoutUrl(data);
+  const checkoutHost = new URL(checkoutUrl).hostname;
+  const localQrWarning = ["localhost", "127.0.0.1", "::1"].includes(checkoutHost)
+    ? `<div class="notice">スマホでQRを読む場合、localhostは開けません。PCと同じWi-Fiから開けるIPアドレス、または公開URLを「消費者ページURL」に入力してください。</div>`
+    : "";
   const qrImage = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=12&data=${encodeURIComponent(checkoutUrl)}`;
 
   qrResult.hidden = false;
@@ -79,6 +95,7 @@ function renderQr(data) {
           ${data.billingType === "subscription" ? `<input type="hidden" name="period" value="${escapeHtml(data.period)}">` : ""}
           <button class="checkout-link link-button" type="submit">消費者ページを開く</button>
         </form>
+        ${localQrWarning}
       </div>
     </div>
     <textarea class="qr-url" readonly>${checkoutUrl}</textarea>
@@ -94,13 +111,22 @@ async function loadMerchantHistory() {
 
   try {
     const response = await fetch(`/api/merchant/orders?merchantName=${encodeURIComponent(data.merchantName)}`);
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      throw new Error("static-mode");
+    }
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "履歴取得に失敗しました。");
     merchantHistory.innerHTML = payload.length
       ? payload.map(historyItem).join("")
       : `<p class="product-name">この店舗の履歴はまだありません。</p>`;
   } catch (error) {
-    merchantHistory.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+    const localOrders = JSON.parse(localStorage.getItem("komojutest_orders") || "[]")
+      .filter((order) => order.merchantName === data.merchantName)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    merchantHistory.innerHTML = localOrders.length
+      ? `<div class="notice">静的デモモードです。実決済履歴にはNodeサーバーが必要です。</div>${localOrders.map(historyItem).join("")}`
+      : `<p class="product-name">この店舗の履歴はまだありません。</p>`;
   }
 }
 
@@ -139,7 +165,7 @@ qrForm.addEventListener("submit", (event) => {
   const data = readForm();
   if (!data.merchantName || !data.productName || !Number.isInteger(data.amount) || data.amount < 1) {
     qrResult.hidden = false;
-    qrResult.innerHTML = `<div class="error">加盟店名、商品名、1円以上の金額を入力してください。</div>`;
+    qrResult.innerHTML = `<div class="error">加盟店名、商品名、消費者ページURL、1円以上の金額を入力してください。</div>`;
     return;
   }
   renderQr(data);
@@ -149,5 +175,6 @@ qrForm.addEventListener("submit", (event) => {
 billingTypeInput.addEventListener("change", syncPeriodField);
 refreshMerchantHistory.addEventListener("click", loadMerchantHistory);
 syncPeriodField();
+consumerBaseUrlInput.value = new URL("../consumer/", window.location.href).href;
 renderQr(readForm());
 loadMerchantHistory();

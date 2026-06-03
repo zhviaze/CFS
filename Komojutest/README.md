@@ -47,6 +47,14 @@ QRコードには以下の情報を含む消費者ページURLを入れていま
 
 ユーザーがQRコードを読み取ると、消費者ページに加盟店名・商品名・金額・決済タイプが自動入力された状態で開きます。
 
+GitHub Pages で公開する場合、加盟店ページの「消費者ページURL」は通常
+`https://portal.cfsjp.com/Komojutest/consumer/` になります。ローカル確認時は
+`http://localhost:8788/consumer/` のように、起動中のローカルURLを指定します。
+
+GitHub Pages は静的ホスティングのため、ログイン画面とQR遷移は静的デモモードで動きます。
+KOMOJU決済、履歴API、返金APIを実際に動かすには、`server.js` をNodeサーバーとして別途デプロイし、
+`KOMOJU_SECRET_KEY` を環境変数で設定してください。
+
 ## 本番化で追加したいもの
 
 - SQLite/PostgreSQLなどの永続DB

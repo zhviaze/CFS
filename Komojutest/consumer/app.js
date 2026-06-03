@@ -4,6 +4,7 @@ const state = {
   prefill: {},
   draft: null,
   busy: false,
+  staticMode: false,
   refundingOrderId: null,
   historyMessage: "",
 };
@@ -49,16 +50,125 @@ function stepper(active) {
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(path, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
+  let response;
+  try {
+    response = await fetch(path, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+    });
+  } catch {
+    return staticApi(path, options);
+  }
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    return staticApi(path, options);
+  }
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.error || "通信に失敗しました。");
   return payload;
+}
+
+function staticApi(path, options = {}) {
+  state.staticMode = true;
+  const method = String(options.method || "GET").toUpperCase();
+  const body = options.body ? JSON.parse(options.body) : {};
+  const localUserKey = "komojutest_user";
+  const localOrdersKey = "komojutest_orders";
+  const user = JSON.parse(localStorage.getItem(localUserKey) || "null");
+  const orders = JSON.parse(localStorage.getItem(localOrdersKey) || "[]");
+
+  if (path === "/api/config") {
+    return {
+      merchantName: "CFS株式会社",
+      productName: "オンライン決済",
+      currency: "JPY",
+      paymentTypes: [{ value: "credit_card", label: "Card決済" }],
+      billingTypes: [
+        { value: "one_time", label: "一回払い" },
+        { value: "subscription", label: "繰り返し決済" },
+      ],
+      periods: [
+        { value: "weekly", label: "毎週" },
+        { value: "monthly", label: "毎月" },
+        { value: "yearly", label: "毎年" },
+      ],
+      komojuReady: false,
+    };
+  }
+
+  if (path === "/api/me") return { user };
+
+  if (path === "/api/login" && method === "POST") {
+    const email = String(body.email || "").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new Error("メールアドレスを正しく入力してください。");
+    }
+    const nextUser = { email };
+    localStorage.setItem(localUserKey, JSON.stringify(nextUser));
+    return { user: nextUser };
+  }
+
+  if (path === "/api/logout" && method === "POST") {
+    localStorage.removeItem(localUserKey);
+    return { ok: true };
+  }
+
+  if (path === "/api/orders" && method === "GET") {
+    if (!user) throw new Error("ログインしてください。");
+    return orders
+      .filter((order) => order.userEmail === user.email)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  if (path === "/api/orders" && method === "POST") {
+    if (!user) throw new Error("ログインしてください。");
+    const now = new Date().toISOString();
+    const order = {
+      id: `static_${Date.now()}`,
+      merchantName: body.merchantName || "CFS株式会社",
+      productName: body.productName || "オンライン決済",
+      amount: Number(body.amount),
+      currency: "JPY",
+      userEmail: user.email,
+      billingType: body.billingType || "one_time",
+      period: body.billingType === "subscription" ? body.period || "monthly" : null,
+      email: body.billingType === "subscription" ? user.email : null,
+      paymentType: body.paymentType || "credit_card",
+      status: "draft",
+      paymentStatus: null,
+      paymentId: null,
+      customerId: null,
+      subscriptionId: null,
+      subscriptionStatus: null,
+      nextCaptureAt: null,
+      refundedAt: null,
+      refundAmount: null,
+      refundStatus: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    orders.push(order);
+    localStorage.setItem(localOrdersKey, JSON.stringify(orders));
+    return order;
+  }
+
+  if (/^\/api\/orders\/[^/]+\/session$/.test(path) && method === "POST") {
+    throw new Error("GitHub PagesではKOMOJU APIを直接呼べません。実決済にはNodeサーバーを起動してください。");
+  }
+
+  if (/^\/api\/orders\/[^/]+\/status$/.test(path) && method === "POST") {
+    const orderId = path.split("/")[3];
+    return orders.find((order) => order.id === orderId) || null;
+  }
+
+  if (/^\/api\/orders\/[^/]+\/refund$/.test(path) && method === "POST") {
+    throw new Error("GitHub Pagesでは返金APIを直接呼べません。");
+  }
+
+  throw new Error("APIサーバーに接続できません。ローカルでは node server.js を起動してください。");
 }
 
 function renderInput(message = "") {
@@ -76,6 +186,7 @@ function renderInput(message = "") {
   const productName = state.draft?.productName || state.prefill.productName || state.config.productName;
   app.innerHTML = `
     ${stepper("input")}
+    ${state.staticMode ? `<div class="notice">静的デモモードです。ログインとQR確認はできますが、実決済にはNodeサーバーが必要です。</div>` : ""}
     <form id="paymentForm">
       <div class="form-grid">
         <div class="field">
@@ -238,6 +349,7 @@ function renderConfirm(message = "") {
   }
   app.innerHTML = `
     ${stepper("confirm")}
+    ${state.staticMode ? `<div class="notice">静的デモモードです。KOMOJUの決済画面へ進むにはNodeサーバーで開いてください。</div>` : ""}
     <div class="summary">
       <div class="summary-row"><span>加盟店名</span><strong>${escapeHtml(state.draft.merchantName)}</strong></div>
       <div class="summary-row"><span>商品名</span><strong>${escapeHtml(state.draft.productName)}</strong></div>
@@ -445,6 +557,7 @@ async function init() {
 
 init().catch((error) => {
   app.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+  historyList.innerHTML = `<p class="product-name">APIサーバーに接続できる状態で再読み込みしてください。</p>`;
 });
 
 function readPrefill() {
