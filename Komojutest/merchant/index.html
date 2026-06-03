@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>加盟店ページ</title>
+    <link rel="stylesheet" href="../shared/styles.css">
+  </head>
+  <body>
+    <main class="shell merchant-shell">
+      <section class="workspace">
+        <div class="brand-block">
+          <p class="eyebrow">Merchant Portal</p>
+          <h1>加盟店ページ</h1>
+          <p class="product-name">決済QRコード生成</p>
+        </div>
+
+        <form id="qrForm">
+          <div class="form-grid">
+            <div class="field">
+              <label for="merchantNameInput">加盟店名</label>
+              <input id="merchantNameInput" name="merchantName" value="CFS株式会社" required>
+            </div>
+            <div class="field">
+              <label for="productNameInput">商品名</label>
+              <input id="productNameInput" name="productName" value="オンライン決済" required>
+            </div>
+            <div class="field">
+              <label for="amountInput">決済金額</label>
+              <input id="amountInput" name="amount" type="number" inputmode="numeric" min="1" step="1" value="1000" required>
+            </div>
+            <div class="field">
+              <label for="billingTypeInput">決済タイプ</label>
+              <select id="billingTypeInput" name="billingType">
+                <option value="one_time">一回払い</option>
+                <option value="subscription">サブスク</option>
+              </select>
+            </div>
+            <div class="field merchant-period-field" hidden>
+              <label for="periodInput">課金周期</label>
+              <select id="periodInput" name="period">
+                <option value="weekly">毎週</option>
+                <option value="monthly" selected>毎月</option>
+                <option value="yearly">毎年</option>
+              </select>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="button" type="submit">QRコードを生成</button>
+            <button id="refreshMerchantHistory" class="button secondary" type="button">履歴を更新</button>
+          </div>
+        </form>
+
+        <div id="qrResult" class="qr-result" hidden></div>
+      </section>
+
+      <aside class="history-panel">
+        <div class="panel-heading">
+          <h2>店舗別決済履歴</h2>
+          <a class="text-button" href="../consumer/">消費者ページ</a>
+        </div>
+        <div id="merchantHistory" class="history-list"></div>
+      </aside>
+    </main>
+
+    <script src="./merchant.js"></script>
+  </body>
+</html>
