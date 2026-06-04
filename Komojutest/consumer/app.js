@@ -5,7 +5,8 @@ const state = {
   draft: null,
   busy: false,
   staticMode: false,
-  refundingOrderId: null,
+  savedPaymentMethod: null,
+  savedPaymentMethods: [],
   historyMessage: "",
 };
 
@@ -43,7 +44,12 @@ function stepper(active) {
   return `
     <div class="stepper">
       ${steps
-        .map(([label, key]) => `<div class="step ${key === active ? "is-active" : ""}">${label}</div>`)
+        .map(
+          ([label, key], index) => `
+            ${index > 0 ? `<span class="step-arrow" aria-hidden="true">→</span>` : ""}
+            <div class="step ${key === active ? "is-active" : ""}">${label}</div>
+          `
+        )
         .join("")}
     </div>
   `;
@@ -77,8 +83,10 @@ function staticApi(path, options = {}) {
   const body = options.body ? JSON.parse(options.body) : {};
   const localUserKey = "komojutest_user";
   const localOrdersKey = "komojutest_orders";
+  const localCustomerKey = "komojutest_customer";
   const user = JSON.parse(localStorage.getItem(localUserKey) || "null");
   const orders = JSON.parse(localStorage.getItem(localOrdersKey) || "[]");
+  const savedCustomer = JSON.parse(localStorage.getItem(localCustomerKey) || "null");
 
   if (path === "/api/config") {
     return {
@@ -99,7 +107,14 @@ function staticApi(path, options = {}) {
     };
   }
 
-  if (path === "/api/me") return { user };
+  if (path === "/api/me") {
+    const savedPaymentMethod = user && savedCustomer?.email === user.email ? { available: true, label: "保存済みカード" } : null;
+    return {
+      user,
+      savedPaymentMethod,
+      savedPaymentMethods: savedPaymentMethod ? [savedPaymentMethod] : [],
+    };
+  }
 
   if (path === "/api/login" && method === "POST") {
     const email = String(body.email || "").trim().toLowerCase();
@@ -108,7 +123,12 @@ function staticApi(path, options = {}) {
     }
     const nextUser = { email };
     localStorage.setItem(localUserKey, JSON.stringify(nextUser));
-    return { user: nextUser };
+    const savedPaymentMethod = savedCustomer?.email === email ? { available: true, label: "保存済みカード" } : null;
+    return {
+      user: nextUser,
+      savedPaymentMethod,
+      savedPaymentMethods: savedPaymentMethod ? [savedPaymentMethod] : [],
+    };
   }
 
   if (path === "/api/logout" && method === "POST") {
@@ -141,6 +161,9 @@ function staticApi(path, options = {}) {
       paymentStatus: null,
       paymentId: null,
       customerId: null,
+      selectedCustomerId: body.selectedCustomerId || null,
+      savePaymentMethod: body.billingType === "subscription" || Boolean(body.savePaymentMethod),
+      usedSavedPaymentMethod: false,
       subscriptionId: null,
       subscriptionStatus: null,
       nextCaptureAt: null,
@@ -157,6 +180,29 @@ function staticApi(path, options = {}) {
 
   if (/^\/api\/orders\/[^/]+\/session$/.test(path) && method === "POST") {
     throw new Error("GitHub PagesではKOMOJU APIを直接呼べません。実決済にはNodeサーバーを起動してください。");
+  }
+
+  if (/^\/api\/orders\/[^/]+\/customer-payment$/.test(path) && method === "POST") {
+    const orderId = path.split("/")[3];
+    const order = orders.find((candidate) => candidate.id === orderId);
+    if (!order) throw new Error("注文が見つかりません。");
+    if (!savedCustomer || savedCustomer.email !== user.email) {
+      throw new Error("保存済み決済手段がありません。");
+    }
+    Object.assign(order, {
+      status: "completed",
+      paymentStatus: "captured",
+      customerId: savedCustomer.customerId,
+      usedSavedPaymentMethod: true,
+      updatedAt: new Date().toISOString(),
+    });
+    localStorage.setItem(localOrdersKey, JSON.stringify(orders));
+    return { order, requires3ds: false, authenticationUrl: null };
+  }
+
+  if (/^\/api\/orders\/[^/]+\/secure-token-status$/.test(path) && method === "POST") {
+    const orderId = path.split("/")[3];
+    return orders.find((order) => order.id === orderId) || null;
   }
 
   if (/^\/api\/orders\/[^/]+\/status$/.test(path) && method === "POST") {
@@ -257,6 +303,13 @@ function renderInput(message = "") {
       billingType: state.prefill.billingType || form.get("billingType"),
       period: state.prefill.period || form.get("period"),
       email,
+      savePaymentMethod: false,
+      selectedCustomerId:
+        form.get("paymentType") === "credit_card"
+          ? selectedSavedPaymentMethod()?.customerId || null
+          : null,
+      useSavedPaymentMethod:
+        form.get("paymentType") === "credit_card" && savedPaymentMethods().length > 0,
     };
     if (!Number.isInteger(state.draft.amount) || state.draft.amount < 1) {
       renderInput("金額は1円以上の整数で入力してください。");
@@ -321,6 +374,8 @@ function renderLogin(message = "") {
         body: JSON.stringify({ email: String(form.get("email") || "").trim() }),
       });
       state.user = result.user;
+      state.savedPaymentMethod = result.savedPaymentMethod;
+      state.savedPaymentMethods = result.savedPaymentMethods || [];
       state.draft = null;
       renderAccount();
       renderInput();
@@ -338,6 +393,8 @@ async function logout() {
   });
   state.user = null;
   state.draft = null;
+  state.savedPaymentMethod = null;
+  state.savedPaymentMethods = [];
   state.historyMessage = "";
   renderLogin();
 }
@@ -347,6 +404,12 @@ function renderConfirm(message = "") {
     renderInput();
     return;
   }
+  const methods = savedPaymentMethods();
+  const hasSavedMethods = methods.length > 0 && state.draft.paymentType === "credit_card";
+  const canUseSavedPayment = hasSavedMethods && state.draft.useSavedPaymentMethod !== false;
+  const canDirectSavedPayment = canUseSavedPayment && state.draft.billingType === "one_time";
+  const selectedMethod = canUseSavedPayment ? selectedSavedPaymentMethod(state.draft.selectedCustomerId) : null;
+  const savedPaymentSummary = savedPaymentMethodSummary(selectedMethod);
   app.innerHTML = `
     ${stepper("confirm")}
     ${state.staticMode ? `<div class="notice">静的デモモードです。KOMOJUの決済画面へ進むにはNodeサーバーで開いてください。</div>` : ""}
@@ -362,16 +425,95 @@ function renderConfirm(message = "") {
           : ""
       }
       <div class="summary-row"><span>決済手段</span><strong>Card決済</strong></div>
+      ${
+        hasSavedMethods
+          ? `<div class="summary-row"><span>カード選択</span><strong>${canUseSavedPayment ? escapeHtml(savedPaymentSummary) : "別カードを使用"}</strong></div>`
+          : state.draft.billingType === "one_time" && state.draft.savePaymentMethod
+            ? `<div class="summary-row"><span>カード保存</span><strong>保存する</strong></div>`
+            : ""
+      }
     </div>
+    ${
+      state.draft.paymentType === "credit_card"
+        ? `<div class="confirm-payment-options">
+            ${
+              hasSavedMethods
+                ? `<div class="field">
+                    <label for="confirmPaymentChoice">利用するカード</label>
+                    <select id="confirmPaymentChoice" name="confirmPaymentChoice">
+                      ${methods
+                        .map((method) => {
+                          const methodId = method.customerId || "";
+                          return `<option value="saved:${escapeHtml(methodId)}" ${
+                            canUseSavedPayment && selectedMethod?.customerId === methodId ? "selected" : ""
+                          }>${escapeHtml(savedPaymentMethodSummary(method))}</option>`;
+                        })
+                        .join("")}
+                      <option value="new_card" ${canUseSavedPayment ? "" : "selected"}>別カードを使う（KOMOJU画面）</option>
+                    </select>
+                  </div>`
+                : ""
+            }
+            ${
+              state.draft.billingType === "one_time"
+                ? `<div id="confirmSaveMethodField" class="field confirm-save-method-field" ${canUseSavedPayment ? "hidden" : ""}>
+                    <label class="checkbox-label">
+                      <input id="confirmSavePaymentMethod" name="confirmSavePaymentMethod" type="checkbox" ${state.draft.savePaymentMethod ? "checked" : ""}>
+                      このカードを次回以降の決済用に保存する
+                    </label>
+                  </div>`
+                : ""
+            }
+          </div>`
+        : ""
+    }
     <div class="actions">
       <button id="backButton" class="button secondary" type="button">戻る</button>
-      <button id="checkoutButton" class="button" type="button" ${state.busy || !state.config.komojuReady ? "disabled" : ""}>${state.config.komojuReady ? "確認して決済へ進む" : "決済ページを準備中"}</button>
+      ${
+        canDirectSavedPayment
+          ? `<button id="savedPaymentButton" class="button" type="button" ${state.busy || !state.config.komojuReady ? "disabled" : ""}>保存済み決済手段で支払う</button>`
+          : `<button id="checkoutButton" class="button" type="button" ${state.busy || !state.config.komojuReady ? "disabled" : ""}>${state.config.komojuReady ? "KOMOJU画面へ進む" : "決済ページを準備中"}</button>`
+      }
     </div>
     ${message ? `<div class="error">${escapeHtml(message)}</div>` : ""}
   `;
 
   document.querySelector("#backButton").addEventListener("click", () => renderInput());
-  document.querySelector("#checkoutButton").addEventListener("click", startCheckout);
+  document.querySelector("#confirmPaymentChoice")?.addEventListener("change", (event) => {
+    const value = event.currentTarget.value;
+    if (value === "new_card") {
+      state.draft.useSavedPaymentMethod = false;
+      state.draft.selectedCustomerId = null;
+      state.draft.savePaymentMethod = true;
+    } else {
+      state.draft.useSavedPaymentMethod = true;
+      state.draft.selectedCustomerId = value.replace(/^saved:/, "");
+      state.draft.savePaymentMethod = false;
+    }
+    renderConfirm(message);
+  });
+  document.querySelector("#confirmSavePaymentMethod")?.addEventListener("change", (event) => {
+    state.draft.savePaymentMethod = event.currentTarget.checked;
+  });
+  document.querySelector("#savedPaymentButton")?.addEventListener("click", startSavedCustomerPayment);
+  document.querySelector("#checkoutButton")?.addEventListener("click", startCheckout);
+}
+
+async function createDraftOrder() {
+  return api("/api/orders", {
+    method: "POST",
+    body: JSON.stringify({
+      amount: state.draft.amount,
+      paymentType: state.draft.paymentType,
+      billingType: state.draft.billingType,
+      period: state.draft.period,
+      email: state.draft.email,
+      merchantName: state.draft.merchantName,
+      productName: state.draft.productName,
+      savePaymentMethod: state.draft.useSavedPaymentMethod ? false : state.draft.savePaymentMethod,
+      selectedCustomerId: state.draft.useSavedPaymentMethod ? state.draft.selectedCustomerId : null,
+    }),
+  });
 }
 
 async function startCheckout() {
@@ -388,18 +530,7 @@ async function startCheckout() {
   state.busy = true;
   renderConfirm();
   try {
-    const order = await api("/api/orders", {
-      method: "POST",
-      body: JSON.stringify({
-        amount: state.draft.amount,
-        paymentType: state.draft.paymentType,
-        billingType: state.draft.billingType,
-        period: state.draft.period,
-        email: state.draft.email,
-        merchantName: state.draft.merchantName,
-        productName: state.draft.productName,
-      }),
-    });
+    const order = await createDraftOrder();
     const session = await api(`/api/orders/${encodeURIComponent(order.id)}/session`, {
       method: "POST",
       body: JSON.stringify({}),
@@ -412,30 +543,52 @@ async function startCheckout() {
   }
 }
 
-async function refundOrder(orderId) {
-  if (!window.confirm("この取引を全額返金します。よろしいですか？")) return;
+async function startSavedCustomerPayment() {
+  if (!state.user) {
+    renderLogin();
+    return;
+  }
 
-  state.refundingOrderId = orderId;
-  state.historyMessage = "";
-  await loadHistory();
+  if (!state.config.komojuReady) {
+    renderConfirm("決済ページは現在準備中です。管理者側の設定完了後にご利用いただけます。");
+    return;
+  }
 
+  const confirmed = window.confirm(
+    `${yen.format(state.draft.amount)}を${savedPaymentMethodSummary(selectedSavedPaymentMethod(state.draft.selectedCustomerId))}で支払います。必要に応じて3Dセキュア認証へ進みます。よろしいですか？`
+  );
+  if (!confirmed) return;
+
+  state.busy = true;
+  renderConfirm();
   try {
-    await api(`/api/orders/${encodeURIComponent(orderId)}/refund`, {
+    const order = await createDraftOrder();
+    const result = await api(`/api/orders/${encodeURIComponent(order.id)}/customer-payment`, {
       method: "POST",
       body: JSON.stringify({}),
     });
-    state.historyMessage = "返金処理を実行しました。";
+
+    if (result.requires3ds && result.authenticationUrl) {
+      window.location.assign(result.authenticationUrl);
+      return;
+    }
+
+    const paidOrder = result.order || result;
+    state.busy = false;
+    state.draft = null;
+    renderComplete(paidOrder);
+    loadHistory();
   } catch (error) {
-    state.historyMessage = error.message;
-  } finally {
-    state.refundingOrderId = null;
-    await loadHistory();
+    state.busy = false;
+    renderConfirm(error.message);
+    loadHistory();
   }
 }
 
 async function renderReturn() {
   const params = new URLSearchParams(window.location.search);
   const orderId = params.get("order_id");
+  const secureTokenId = params.get("secure_token_id");
   let order = null;
   let message = "";
 
@@ -446,19 +599,43 @@ async function renderReturn() {
 
   if (orderId) {
     try {
-      order = await api(`/api/orders/${encodeURIComponent(orderId)}/status`, {
-        method: "POST",
-        body: JSON.stringify({}),
-      });
+      order = secureTokenId
+        ? await api(`/api/orders/${encodeURIComponent(orderId)}/secure-token-status`, {
+            method: "POST",
+            body: JSON.stringify({ secureTokenId }),
+          })
+        : await api(`/api/orders/${encodeURIComponent(orderId)}/status`, {
+            method: "POST",
+            body: JSON.stringify({}),
+          });
     } catch (error) {
       message = error.message;
     }
   }
 
+  renderComplete(order, message, orderId);
+  loadHistory();
+}
+
+function renderComplete(order, message = "", fallbackOrderId = "") {
+  if (order?.customerId) {
+    const method = {
+      available: true,
+      customerId: order.customerId,
+      label: order.cardInfo?.label || "保存済みカード",
+      ...(order.cardInfo || {}),
+    };
+    state.savedPaymentMethod = method;
+    const otherMethods = state.savedPaymentMethods.filter((candidate) => candidate.customerId !== order.customerId);
+    state.savedPaymentMethods = [method, ...otherMethods];
+  }
+  const savedPaymentSummary = savedPaymentMethodSummary(selectedSavedPaymentMethod(order?.customerId));
   app.innerHTML = `
     ${stepper("complete")}
     <div class="summary">
-      <div class="summary-row"><span>注文番号</span><strong>${escapeHtml(order?.id || orderId || "-")}</strong></div>
+      <div class="summary-row"><span>注文番号</span><strong>${escapeHtml(order?.id || fallbackOrderId || "-")}</strong></div>
+      <div class="summary-row"><span>加盟店名</span><strong>${escapeHtml(order?.merchantName || "-")}</strong></div>
+      <div class="summary-row"><span>商品名</span><strong>${escapeHtml(order?.productName || "-")}</strong></div>
       <div class="summary-row"><span>決済タイプ</span><strong>${order?.billingType === "subscription" ? "繰り返し決済" : "一回払い"}</strong></div>
       <div class="summary-row"><span>セッション状態</span><strong><span class="badge ${escapeHtml(order?.status)}">${escapeHtml(order?.status || "-")}</span></strong></div>
       <div class="summary-row"><span>決済状態</span><strong><span class="badge ${escapeHtml(order?.paymentStatus)}">${escapeHtml(order?.paymentStatus || "-")}</span></strong></div>
@@ -468,45 +645,99 @@ async function renderReturn() {
              <div class="summary-row"><span>次回課金</span><strong>${formatOptionalDate(order?.nextCaptureAt)}</strong></div>`
           : ""
       }
+      ${
+        order?.usedSavedPaymentMethod
+          ? `<div class="summary-row"><span>利用した決済手段</span><strong>${escapeHtml(savedPaymentSummary)}</strong></div>`
+        : order?.customerId
+            ? `<div class="summary-row"><span>利用カード</span><strong>${escapeHtml(cardInfoLabel(order.cardInfo))}</strong></div>`
+            : ""
+      }
+      ${
+        order?.status === "requires_3ds"
+          ? `<div class="summary-row"><span>3Dセキュア</span><strong>認証待ち</strong></div>`
+          : ""
+      }
       <div class="summary-row"><span>金額</span><strong>${order ? yen.format(order.amount) : "-"}</strong></div>
-    </div>
-    <div class="actions">
-      <button id="newPayment" class="button" type="button">新しい決済を作成</button>
     </div>
     ${message ? `<div class="error">${escapeHtml(message)}</div>` : ""}
   `;
-  document.querySelector("#newPayment").addEventListener("click", () => {
-    window.history.replaceState({}, "", "/");
-    state.draft = null;
-    renderInput();
-  });
-  loadHistory();
+}
+
+function savedPaymentMethods() {
+  const methods = Array.isArray(state.savedPaymentMethods) ? state.savedPaymentMethods : [];
+  const fallback = state.savedPaymentMethod ? [state.savedPaymentMethod] : [];
+  return (methods.length ? methods : fallback).filter((method) => method?.available && hasDisplayableCardInfo(method));
+}
+
+function selectedSavedPaymentMethod(customerId = state.draft?.selectedCustomerId) {
+  const methods = savedPaymentMethods();
+  return methods.find((method) => method.customerId && method.customerId === customerId) || methods[0] || null;
+}
+
+function savedPaymentMethodSummary(method = state.savedPaymentMethod) {
+  if (!method) return "保存済みカード";
+  if (method.label && method.label !== "保存済みカード") return method.label;
+  const brand = String(method.brand || "CARD").toUpperCase();
+  const last4 = method.lastFourDigits ? ` **** ${method.lastFourDigits}` : "";
+  const expiry = method.expiryMonth && method.expiryYear ? `（${String(method.expiryMonth).padStart(2, "0")}/${method.expiryYear}）` : "";
+  if (last4 || expiry) return `${brand}${last4}${expiry}`;
+  return "カード情報未取得";
+}
+
+function hasDisplayableCardInfo(method) {
+  return Boolean(method?.lastFourDigits || (method?.label && method.label !== "保存済みカード"));
 }
 
 function historyItem(order) {
   const isSubscription = order.billingType === "subscription";
-  const canRefund = !isSubscription && Boolean(order.paymentId) && !order.refundedAt;
-  const isRefunding = state.refundingOrderId === order.id;
   return `
     <article class="history-item">
-      <div class="history-id">${escapeHtml(order.id)}</div>
-      <div class="history-row"><span>タイプ</span><strong>${isSubscription ? "繰り返し" : "一回払い"}</strong></div>
+      <div class="history-row"><span>決済番号</span><strong>${escapeHtml(order.id || "-")}</strong></div>
+      <div class="history-row"><span>加盟店名</span><strong>${escapeHtml(order.merchantName || "-")}</strong></div>
+      <div class="history-row"><span>決済時間</span><strong>${dateTime.format(new Date(order.createdAt))}</strong></div>
       <div class="history-row"><span>金額</span><strong>${yen.format(order.amount)}</strong></div>
-      ${isSubscription ? `<div class="history-row"><span>周期</span><strong>${periodLabel(order.period)}</strong></div>` : ""}
-      <div class="history-row"><span>Session</span><strong><span class="badge ${escapeHtml(order.status)}">${escapeHtml(order.status)}</span></strong></div>
-      ${
-        isSubscription
-          ? `<div class="history-row"><span>Subscription</span><strong><span class="badge ${escapeHtml(order.subscriptionStatus)}">${escapeHtml(order.subscriptionStatus || "-")}</span></strong></div>
-             <div class="history-row"><span>次回課金</span><strong>${formatOptionalDate(order.nextCaptureAt)}</strong></div>`
-          : `<div class="history-row"><span>Payment</span><strong><span class="badge ${escapeHtml(order.paymentStatus)}">${escapeHtml(order.paymentStatus || "-")}</span></strong></div>
-             <div class="history-row"><span>返金</span><strong>${order.refundedAt ? yen.format(order.refundAmount || order.amount) : "-"}</strong></div>`
-      }
-      <div class="history-row"><span>作成</span><strong>${dateTime.format(new Date(order.createdAt))}</strong></div>
-      <button class="history-refund" type="button" data-refund-order="${escapeHtml(order.id)}" ${canRefund && !isRefunding ? "" : "disabled"}>
-        ${isSubscription ? "サブスク返金対象外" : order.refundedAt ? "返金済み" : isRefunding ? "返金処理中" : canRefund ? "返金する" : "返金不可"}
-      </button>
+      <div class="history-row"><span>決済タイプ</span><strong>${isSubscription ? "サブスク" : "一回払い"}</strong></div>
+      <div class="history-row"><span>決済ステータス</span><strong><span class="status-label ${paymentStatusClass(order)}">${paymentStatusLabel(order)}</span></strong></div>
+      <div class="history-row"><span>利用カード</span><strong>${escapeHtml(cardInfoLabel(order.cardInfo))}</strong></div>
+      <div class="history-row"><span>メールアドレス</span><strong>${escapeHtml(order.customerEmail || order.email || "-")}</strong></div>
     </article>
   `;
+}
+
+function cardInfoLabel(cardInfo) {
+  return cardInfo?.label || "カード情報未取得";
+}
+
+function paymentStatusLabel(order) {
+  const status = paymentStatusKey(order);
+  return (
+    {
+      active: "有効",
+      authorized: "承認済み",
+      captured: "決済完了",
+      completed: "完了",
+      draft: "作成中",
+      expired: "期限切れ",
+      failed: "失敗",
+      pending: "処理中",
+      requires_3ds: "3Dセキュア認証待ち",
+      refunded: "返金済み",
+    }[status] || escapeHtml(status || "-")
+  );
+}
+
+function paymentStatusKey(order) {
+  return order.billingType === "subscription" ? order.subscriptionStatus || order.status : order.paymentStatus || order.status;
+}
+
+function paymentStatusClass(order) {
+  const status = paymentStatusKey(order);
+  if (["captured", "completed", "active", "authorized"].includes(status)) return "status-success";
+  if (["pending", "draft"].includes(status)) return "status-pending";
+  if (["requires_3ds"].includes(status)) return "status-warning";
+  if (["refunded"].includes(status)) return "status-refunded";
+  if (["failed", "expired"].includes(status)) return "status-danger";
+  return "status-muted";
 }
 
 function periodLabel(period) {
@@ -529,9 +760,6 @@ async function loadHistory() {
     historyList.innerHTML = orders.length
       ? `${state.historyMessage ? `<div class="notice">${escapeHtml(state.historyMessage)}</div>` : ""}${orders.map(historyItem).join("")}`
       : `<p class="product-name">まだ履歴がありません。</p>`;
-    historyList.querySelectorAll("[data-refund-order]").forEach((button) => {
-      button.addEventListener("click", () => refundOrder(button.dataset.refundOrder));
-    });
   } catch (error) {
     historyList.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
   }
@@ -541,13 +769,15 @@ async function init() {
   state.config = await api("/api/config");
   const me = await api("/api/me");
   state.user = me.user;
+  state.savedPaymentMethod = me.savedPaymentMethod;
+  state.savedPaymentMethods = me.savedPaymentMethods || [];
   state.prefill = readPrefill();
   document.querySelector("#merchantName").textContent = state.prefill.merchantName || state.config.merchantName;
   document.querySelector("#productName").textContent = state.prefill.productName || state.config.productName;
   renderAccount();
   refreshHistory.addEventListener("click", loadHistory);
 
-  if (window.location.pathname === "/return") {
+  if (window.location.pathname === "/return" || window.location.pathname.endsWith("/return")) {
     await renderReturn();
   } else {
     renderInput();

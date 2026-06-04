@@ -3,16 +3,19 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>加盟店ページ</title>
+    <title>CFS管理ポータル</title>
     <link rel="stylesheet" href="../shared/styles.css">
   </head>
   <body>
     <main class="shell merchant-shell">
       <section class="workspace">
-        <div class="brand-block">
-          <p class="eyebrow">Merchant Portal</p>
-          <h1>加盟店ページ</h1>
-          <p class="product-name">決済QRコード生成</p>
+        <div class="brand-block merchant-brand">
+          <img class="brand-logo" src="../shared/pay-master-logo.png" alt="Pay Master">
+          <div>
+            <p class="eyebrow">Merchant Portal</p>
+            <h1>CFS管理ポータル</h1>
+            <p class="product-name">決済QRコード生成</p>
+          </div>
         </div>
 
         <form id="qrForm">
@@ -24,10 +27,6 @@
             <div class="field">
               <label for="productNameInput">商品名</label>
               <input id="productNameInput" name="productName" value="オンライン決済" required>
-            </div>
-            <div class="field">
-              <label for="consumerBaseUrlInput">消費者ページURL</label>
-              <input id="consumerBaseUrlInput" name="consumerBaseUrl" required>
             </div>
             <div class="field">
               <label for="amountInput">決済金額</label>
@@ -62,6 +61,12 @@
         <div class="panel-heading">
           <h2>店舗別決済履歴</h2>
           <a class="text-button" href="../consumer/">消費者ページ</a>
+        </div>
+        <div class="history-filter">
+          <label for="merchantFilter">店舗</label>
+          <select id="merchantFilter">
+            <option value="">全店舗</option>
+          </select>
         </div>
         <div id="merchantHistory" class="history-list"></div>
       </aside>

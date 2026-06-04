@@ -10,15 +10,17 @@ const MERCHANT_NAME = process.env.MERCHANT_NAME || "CFS株式会社";
 const PRODUCT_NAME = process.env.PRODUCT_NAME || "オンライン決済";
 const CURRENCY = process.env.CURRENCY || "JPY";
 
-const DATA_DIR = path.join(__dirname, "data");
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
+const CUSTOMERS_FILE = path.join(DATA_DIR, "customers.json");
 const PUBLIC_DIR = __dirname;
 
 function ensureStore() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
   if (!fs.existsSync(ORDERS_FILE)) fs.writeFileSync(ORDERS_FILE, "[]\n");
   if (!fs.existsSync(SESSIONS_FILE)) fs.writeFileSync(SESSIONS_FILE, "{}\n");
+  if (!fs.existsSync(CUSTOMERS_FILE)) fs.writeFileSync(CUSTOMERS_FILE, "{}\n");
 }
 
 function readOrders() {
@@ -39,6 +41,178 @@ function readSessions() {
 function writeSessions(sessions) {
   ensureStore();
   fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessions, null, 2) + "\n");
+}
+
+function readCustomers() {
+  ensureStore();
+  return JSON.parse(fs.readFileSync(CUSTOMERS_FILE, "utf8"));
+}
+
+function writeCustomers(customers) {
+  ensureStore();
+  fs.writeFileSync(CUSTOMERS_FILE, JSON.stringify(customers, null, 2) + "\n");
+}
+
+function savedCustomerForEmail(email) {
+  return savedCustomersForEmail(email)[0] || null;
+}
+
+function savedCustomersForEmail(email) {
+  if (!email) return [];
+  const customers = readCustomers();
+  const methodMap = new Map(
+    normalizedCustomerMethods(customers[email]).map((method) => [method.customerId, { ...method }])
+  );
+  const existingOrders = readOrders()
+    .filter((order) => orderOwnerEmail(order) === email && order.customerId)
+    .sort((a, b) => String(b.updatedAt || b.createdAt).localeCompare(String(a.updatedAt || a.createdAt)));
+  const enrichedCustomerIds = new Set();
+
+  for (const order of existingOrders) {
+    const currentMethod = methodMap.get(order.customerId) || { customerId: order.customerId };
+    const paymentDetails = paymentDetailsFromOrder(order);
+    if (!methodMap.has(order.customerId)) {
+      methodMap.set(order.customerId, currentMethod);
+    }
+    if (paymentDetails && !enrichedCustomerIds.has(order.customerId)) {
+      enrichedCustomerIds.add(order.customerId);
+      methodMap.set(order.customerId, {
+        ...currentMethod,
+        label: savedPaymentMethodLabel(paymentDetails),
+        brand: paymentDetails.brand || currentMethod.brand || null,
+        lastFourDigits: paymentDetails.last_four_digits || currentMethod.lastFourDigits || null,
+        expiryMonth: paymentDetails.month || currentMethod.expiryMonth || null,
+        expiryYear: paymentDetails.year || currentMethod.expiryYear || null,
+        sourceOrderId: order.id,
+        updatedAt: order.updatedAt || order.createdAt,
+      });
+    }
+  }
+
+  return [...methodMap.values()].sort((a, b) =>
+    String(b.updatedAt || "").localeCompare(String(a.updatedAt || ""))
+  );
+}
+
+function normalizedCustomerMethods(entry) {
+  if (!entry) return [];
+  if (Array.isArray(entry.methods)) return entry.methods;
+  if (entry.customerId) return [entry];
+  return [];
+}
+
+function paymentDetailsFromOrder(order) {
+  if (!order) return null;
+  return (
+    order.rawPayment?.payment_details ||
+    order.rawSession?.payment?.payment_details ||
+    order.rawRefund?.payment_details ||
+    null
+  );
+}
+
+function savedPaymentMethodLabel(details) {
+  if (!details) return "保存済みカード";
+  const brand = String(details.brand || details.type || "card").toUpperCase();
+  const last4 = details.last_four_digits ? ` **** ${details.last_four_digits}` : "";
+  const expiry = details.month && details.year ? `（${String(details.month).padStart(2, "0")}/${details.year}）` : "";
+  return `${brand}${last4}${expiry}`;
+}
+
+function cardInfoForOrder(order) {
+  const details = paymentDetailsFromOrder(order);
+  if (!details) {
+    const customer = savedCustomersForEmail(orderOwnerEmail(order)).find((method) => method.customerId === order.customerId) ||
+      savedCustomerForEmail(orderOwnerEmail(order));
+    if (!customer?.lastFourDigits) return null;
+    return {
+      label: customer.label || "保存済みカード",
+      brand: customer.brand || null,
+      lastFourDigits: customer.lastFourDigits,
+      expiryMonth: customer.expiryMonth || null,
+      expiryYear: customer.expiryYear || null,
+    };
+  }
+  return {
+    label: savedPaymentMethodLabel(details),
+    brand: details.brand || null,
+    lastFourDigits: details.last_four_digits || null,
+    expiryMonth: details.month || null,
+    expiryYear: details.year || null,
+  };
+}
+
+function enrichedCustomerMethod(customer, email) {
+  if (!customer?.customerId || customer.lastFourDigits) return customer;
+  const sourceOrder = readOrders().find((order) => order.id === customer.sourceOrderId && paymentDetailsFromOrder(order)) ||
+    readOrders().find((order) => orderOwnerEmail(order) === email && order.customerId === customer.customerId && paymentDetailsFromOrder(order));
+  const paymentDetails = paymentDetailsFromOrder(sourceOrder);
+  if (!paymentDetails) return customer;
+  return {
+    ...customer,
+    label: savedPaymentMethodLabel(paymentDetails),
+    brand: paymentDetails.brand || customer.brand || null,
+    lastFourDigits: paymentDetails.last_four_digits || customer.lastFourDigits || null,
+    expiryMonth: paymentDetails.month || customer.expiryMonth || null,
+    expiryYear: paymentDetails.year || customer.expiryYear || null,
+  };
+}
+
+function savedPaymentMethodForEmail(email) {
+  const methods = savedCustomersForEmail(email);
+  const customer = enrichedCustomerMethod(methods[0], email);
+  if (!customer?.customerId) return null;
+  return {
+    available: true,
+    label: customer.label || "保存済みカード",
+    brand: customer.brand || null,
+    lastFourDigits: customer.lastFourDigits || null,
+    expiryMonth: customer.expiryMonth || null,
+    expiryYear: customer.expiryYear || null,
+    customerId: customer.customerId,
+    updatedAt: customer.updatedAt,
+  };
+}
+
+function savedPaymentMethodsForEmail(email) {
+  return savedCustomersForEmail(email).map((method) => enrichedCustomerMethod(method, email)).map((customer) => ({
+    available: true,
+    label: customer.label || "保存済みカード",
+    brand: customer.brand || null,
+    lastFourDigits: customer.lastFourDigits || null,
+    expiryMonth: customer.expiryMonth || null,
+    expiryYear: customer.expiryYear || null,
+    customerId: customer.customerId,
+    updatedAt: customer.updatedAt,
+  }));
+}
+
+function rememberCustomer(email, customerId, sourceOrderId) {
+  if (!email || !customerId) return null;
+  const customers = readCustomers();
+  const sourceOrder = readOrders().find((order) => order.id === sourceOrderId);
+  const paymentDetails = paymentDetailsFromOrder(sourceOrder);
+  const methods = normalizedCustomerMethods(customers[email]);
+  const existingMethod = methods.find((method) => method.customerId === customerId) || {};
+  const nextMethod = {
+    customerId,
+    label: paymentDetails ? savedPaymentMethodLabel(paymentDetails) : existingMethod.label || "保存済みカード",
+    brand: paymentDetails?.brand || existingMethod.brand || null,
+    lastFourDigits: paymentDetails?.last_four_digits || existingMethod.lastFourDigits || null,
+    expiryMonth: paymentDetails?.month || existingMethod.expiryMonth || null,
+    expiryYear: paymentDetails?.year || existingMethod.expiryYear || null,
+    sourceOrderId,
+    updatedAt: new Date().toISOString(),
+  };
+  const index = methods.findIndex((method) => method.customerId === customerId);
+  if (index === -1) {
+    methods.unshift(nextMethod);
+  } else {
+    methods[index] = { ...methods[index], ...nextMethod };
+  }
+  customers[email] = { methods };
+  writeCustomers(customers);
+  return nextMethod;
 }
 
 function sendJson(res, status, payload) {
@@ -180,6 +354,10 @@ function publicOrder(order) {
     paymentStatus: order.paymentStatus,
     paymentId: order.paymentId,
     customerId: order.customerId || null,
+    customerEmail: orderOwnerEmail(order),
+    cardInfo: cardInfoForOrder(order),
+    savePaymentMethod: Boolean(order.savePaymentMethod),
+    usedSavedPaymentMethod: Boolean(order.usedSavedPaymentMethod),
     subscriptionId: order.subscriptionId || null,
     subscriptionStatus: order.subscriptionStatus || null,
     nextCaptureAt: order.nextCaptureAt || null,
@@ -199,6 +377,28 @@ function merchantOrder(order) {
   };
 }
 
+function shouldRefreshFromSession(order) {
+  if (!order.sessionId) return false;
+  if ((order.billingType || "one_time") === "subscription") return !order.subscriptionId;
+  return !order.paymentId || order.status === "pending" || (order.savePaymentMethod && !order.customerId);
+}
+
+async function refreshOrdersFromSessions(orders) {
+  const refreshed = [];
+  for (const order of orders) {
+    if (shouldRefreshFromSession(order)) {
+      try {
+        refreshed.push(await refreshOrderFromSession(order));
+      } catch {
+        refreshed.push(order);
+      }
+    } else {
+      refreshed.push(order);
+    }
+  }
+  return refreshed;
+}
+
 function updateOrder(id, changes) {
   const orders = readOrders();
   const index = orders.findIndex((order) => order.id === id);
@@ -209,6 +409,9 @@ function updateOrder(id, changes) {
 }
 
 async function createSession(req, order) {
+  const savedCustomer = savedCustomersForEmail(order.userEmail).find((method) => method.customerId === order.selectedCustomerId) ||
+    (order.selectedCustomerId ? null : savedCustomerForEmail(order.userEmail));
+  const customerPayload = savedCustomer?.customerId ? { customer_id: savedCustomer.customerId } : {};
   const payload =
     order.billingType === "subscription"
       ? {
@@ -218,7 +421,8 @@ async function createSession(req, order) {
           payment_types: [order.paymentType],
           default_locale: "ja",
           email: order.email,
-          external_customer_id: order.id,
+          external_customer_id: order.userEmail,
+          ...customerPayload,
           metadata: {
             order_id: order.id,
             merchant: order.merchantName,
@@ -227,6 +431,28 @@ async function createSession(req, order) {
             period: order.period,
           },
         }
+      : order.savePaymentMethod
+        ? {
+            mode: "customer_payment",
+            amount: order.amount,
+            currency: order.currency,
+            return_url: `${absoluteBaseUrl(req)}/consumer/return?order_id=${encodeURIComponent(order.id)}`,
+            payment_types: [order.paymentType],
+            default_locale: "ja",
+            email: order.userEmail,
+            external_customer_id: order.userEmail,
+            ...customerPayload,
+            payment_data: {
+              external_order_num: order.id,
+            },
+            metadata: {
+              order_id: order.id,
+              merchant: order.merchantName,
+              product: order.productName,
+              billing: "one_time",
+              save_payment_method: "true",
+            },
+          }
       : {
           mode: "payment",
           amount: order.amount,
@@ -248,6 +474,104 @@ async function createSession(req, order) {
   return komoju("/sessions", {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+async function createPaymentWithCustomer(req, order, customerId) {
+  const secureToken = await createSecureTokenWithCustomer(req, order, customerId);
+  const tokenId = secureToken.id || secureToken.secure_token;
+
+  if (secureToken.verification_status === "NEEDS_VERIFY") {
+    return updateOrder(order.id, {
+      status: "requires_3ds",
+      customerId,
+      secureTokenId: tokenId,
+      secureTokenStatus: secureToken.verification_status,
+      secureTokenAuthUrl: secureToken.authentication_url,
+      rawSecureToken: secureToken,
+    });
+  }
+
+  if (secureToken.verification_status === "ERRORED") {
+    const error = new Error("3Dセキュア認証の開始に失敗しました。別のカードでお試しください。");
+    error.status = 422;
+    error.payload = secureToken;
+    throw error;
+  }
+
+  return completePaymentWithSecureToken(order, customerId, tokenId, secureToken);
+}
+
+async function createSecureTokenWithCustomer(req, order, customerId) {
+  return komoju("/secure_tokens", {
+    method: "POST",
+    body: JSON.stringify({
+      amount: order.amount,
+      currency: order.currency,
+      customer: customerId,
+      return_url: `${absoluteBaseUrl(req)}/consumer/return?order_id=${encodeURIComponent(order.id)}`,
+    }),
+  });
+}
+
+async function completePaymentWithSecureToken(order, customerId, tokenId, secureToken) {
+  return komoju("/payments", {
+    method: "POST",
+    body: JSON.stringify({
+      amount: order.amount,
+      tax: 0,
+      currency: order.currency,
+      payment_details: tokenId,
+      external_order_num: order.id,
+      metadata: {
+        order_id: order.id,
+        merchant: order.merchantName,
+        product: order.productName,
+        billing: "one_time",
+        saved_payment_method: "true",
+      },
+    }),
+  }).then((payment) =>
+    updateOrder(order.id, {
+      status: payment.status === "captured" ? "completed" : payment.status || "pending",
+      paymentStatus: payment.status || "pending",
+      paymentId: payment.id,
+      customerId,
+      secureTokenId: tokenId,
+      secureTokenStatus: secureToken?.verification_status || "OK",
+      usedSavedPaymentMethod: true,
+      rawSecureToken: secureToken,
+      rawPayment: payment,
+    })
+  );
+}
+
+async function completeSecureTokenPayment(order) {
+  if (!order.secureTokenId || !order.customerId) {
+    const error = new Error("3Dセキュア認証情報が見つかりません。");
+    error.status = 422;
+    throw error;
+  }
+
+  const secureToken = await komoju(`/secure_tokens/${encodeURIComponent(order.secureTokenId)}`);
+  const status = secureToken.verification_status;
+  if (status === "OK" || status === "SKIPPED") {
+    return completePaymentWithSecureToken(order, order.customerId, order.secureTokenId, secureToken);
+  }
+  if (status === "NEEDS_VERIFY") {
+    return updateOrder(order.id, {
+      status: "requires_3ds",
+      secureTokenStatus: status,
+      secureTokenAuthUrl: secureToken.authentication_url || order.secureTokenAuthUrl,
+      rawSecureToken: secureToken,
+    });
+  }
+
+  return updateOrder(order.id, {
+    status: "failed",
+    paymentStatus: "failed",
+    secureTokenStatus: status || "ERRORED",
+    rawSecureToken: secureToken,
   });
 }
 
@@ -288,6 +612,7 @@ async function refreshOrderFromSession(order) {
     }
 
     if (order.subscriptionId) {
+      rememberCustomer(orderOwnerEmail(order), customerId, order.id);
       return updateOrder(order.id, {
         status: session.status || order.status,
         customerId,
@@ -296,6 +621,7 @@ async function refreshOrderFromSession(order) {
     }
 
     const subscription = await createSubscription(order, customerId);
+    rememberCustomer(orderOwnerEmail(order), customerId, order.id);
     return updateOrder(order.id, {
       status: "subscription_created",
       customerId,
@@ -307,12 +633,21 @@ async function refreshOrderFromSession(order) {
     });
   }
 
-  return updateOrder(order.id, {
+  const customerId =
+    session.customer_id ||
+    session.customer?.id ||
+    session.customer ||
+    order.customerId ||
+    null;
+  const updated = updateOrder(order.id, {
     status: session.status || order.status,
     paymentStatus: session.payment?.status || order.paymentStatus || null,
     paymentId: session.payment?.id || order.paymentId || null,
+    customerId,
     rawSession: session,
   });
+  if (customerId) rememberCustomer(orderOwnerEmail(updated), customerId, updated.id);
+  return updated;
 }
 
 async function refundPayment(paymentId, amount) {
@@ -361,10 +696,19 @@ function serveStatic(req, res) {
   fs.createReadStream(filePath).pipe(res);
 }
 
+function redirectDirectoryPath(req, res, url) {
+  if (!["/consumer", "/merchant"].includes(url.pathname)) return false;
+  res.writeHead(308, { Location: `${url.pathname}/${url.search}` });
+  res.end();
+  return true;
+}
+
 async function router(req, res) {
   const url = new URL(req.url, "http://localhost");
 
   try {
+    if ((req.method === "GET" || req.method === "HEAD") && redirectDirectoryPath(req, res, url)) return;
+
     if (req.method === "GET" && url.pathname === "/api/config") {
       sendJson(res, 200, {
         merchantName: MERCHANT_NAME,
@@ -386,7 +730,12 @@ async function router(req, res) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/me") {
-      sendJson(res, 200, { user: currentUser(req) });
+      const user = currentUser(req);
+      sendJson(res, 200, {
+        user,
+        savedPaymentMethod: user ? savedPaymentMethodForEmail(user.email) : null,
+        savedPaymentMethods: user ? savedPaymentMethodsForEmail(user.email) : [],
+      });
       return;
     }
 
@@ -401,12 +750,20 @@ async function router(req, res) {
       const sessions = readSessions();
       sessions[sessionId] = { email, createdAt: new Date().toISOString() };
       writeSessions(sessions);
+      const savedPaymentMethod = savedPaymentMethodForEmail(email);
+      const savedPaymentMethods = savedPaymentMethodsForEmail(email);
       res.writeHead(200, {
         "Content-Type": "application/json; charset=utf-8",
         "Cache-Control": "no-store",
         "Set-Cookie": sessionCookie(sessionId, 60 * 60 * 24 * 14),
       });
-      res.end(JSON.stringify({ user: { email } }));
+      res.end(
+        JSON.stringify({
+          user: { email },
+          savedPaymentMethod,
+          savedPaymentMethods,
+        })
+      );
       return;
     }
 
@@ -429,22 +786,18 @@ async function router(req, res) {
     if (req.method === "GET" && url.pathname === "/api/orders") {
       const user = requireUser(req, res);
       if (!user) return;
-      const orders = readOrders()
+      const orders = await refreshOrdersFromSessions(readOrders()
         .filter((order) => userOwnsOrder(order, user))
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
       sendJson(res, 200, orders.map(publicOrder));
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/merchant/orders") {
       const merchantName = String(url.searchParams.get("merchantName") || "").trim();
-      if (!merchantName) {
-        sendJson(res, 422, { error: "加盟店名を指定してください。" });
-        return;
-      }
-      const orders = readOrders()
-        .filter((order) => order.merchantName === merchantName)
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      const orders = await refreshOrdersFromSessions(readOrders()
+        .filter((order) => !merchantName || order.merchantName === merchantName)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
       sendJson(res, 200, orders.map(merchantOrder));
       return;
     }
@@ -503,6 +856,9 @@ async function router(req, res) {
         paymentStatus: null,
         paymentId: null,
         customerId: null,
+        selectedCustomerId: body.selectedCustomerId || null,
+        savePaymentMethod: billingType === "subscription" || Boolean(body.savePaymentMethod),
+        usedSavedPaymentMethod: false,
         subscriptionId: null,
         subscriptionStatus: null,
         nextCaptureAt: null,
@@ -535,6 +891,50 @@ async function router(req, res) {
         rawSession: session,
       });
       sendJson(res, 200, { order: publicOrder(updated), sessionUrl: session.session_url });
+      return;
+    }
+
+    const customerPaymentMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/customer-payment$/);
+    if (req.method === "POST" && customerPaymentMatch) {
+      const user = requireUser(req, res);
+      if (!user) return;
+      const order = findUserOrder(customerPaymentMatch[1], user);
+      if (!order) {
+        sendJson(res, 404, { error: "注文が見つかりません。" });
+        return;
+      }
+      if ((order.billingType || "one_time") !== "one_time") {
+        sendJson(res, 422, { error: "保存済み決済手段での即時決済は一回払いのみ対応しています。" });
+        return;
+      }
+      const savedMethods = savedPaymentMethodsForEmail(user.email);
+      const savedCustomer = savedMethods.find((method) => method.customerId === order.selectedCustomerId) || savedMethods[0];
+      if (!savedCustomer?.customerId) {
+        sendJson(res, 422, { error: "保存済み決済手段がありません。KOMOJU画面でカード情報を入力してください。" });
+        return;
+      }
+
+      const updated = await createPaymentWithCustomer(req, order, savedCustomer.customerId);
+      sendJson(res, 200, {
+        order: publicOrder(updated),
+        authenticationUrl: updated.secureTokenAuthUrl || null,
+        requires3ds: updated.status === "requires_3ds",
+      });
+      return;
+    }
+
+    const secureTokenStatusMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/secure-token-status$/);
+    if (req.method === "POST" && secureTokenStatusMatch) {
+      const user = requireUser(req, res);
+      if (!user) return;
+      const order = findUserOrder(secureTokenStatusMatch[1], user);
+      if (!order) {
+        sendJson(res, 404, { error: "注文が見つかりません。" });
+        return;
+      }
+
+      const updated = await completeSecureTokenPayment(order);
+      sendJson(res, 200, publicOrder(updated));
       return;
     }
 
