@@ -204,13 +204,31 @@ describe("KOMOJU portal pages", () => {
     assert.equal(consumer.response.status, 200);
     assert.match(consumer.text, /CFSオンライン決済/);
     assert.match(consumer.text, /\.\/app\.js/);
+    assert.match(consumer.text, /shared\/config\.js/);
 
     const merchant = await request("/merchant/");
     assert.equal(merchant.response.status, 200);
     assert.match(merchant.text, /CFS管理ポータル/);
     assert.match(merchant.text, /merchant\.js/);
+    assert.match(merchant.text, /shared\/config\.js/);
     assert.doesNotMatch(merchant.text, /consumerBaseUrlInput/);
     assert.doesNotMatch(merchant.text, /消費者ページURL/);
+  });
+
+  it("allows the published GitHub Pages origin to call the API", async () => {
+    const { response } = await request("/api/config", {
+      headers: { Origin: "https://portal.cfsjp.com" }
+    });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("access-control-allow-origin"), "https://portal.cfsjp.com");
+    assert.equal(response.headers.get("access-control-allow-credentials"), "true");
+
+    const options = await fetch(`${BASE_URL}/api/config`, {
+      method: "OPTIONS",
+      headers: { Origin: "https://portal.cfsjp.com" }
+    });
+    assert.equal(options.status, 204);
+    assert.equal(options.headers.get("access-control-allow-methods"), "GET,POST,OPTIONS");
   });
 
   it("logs in and exposes all saved cards for the consumer", async () => {

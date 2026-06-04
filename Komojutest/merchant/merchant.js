@@ -5,6 +5,7 @@ const refreshMerchantHistory = document.querySelector("#refreshMerchantHistory")
 const billingTypeInput = document.querySelector("#billingTypeInput");
 const periodField = document.querySelector(".merchant-period-field");
 const merchantFilter = document.querySelector("#merchantFilter");
+const portalConfig = window.KOMOJU_PORTAL_CONFIG || {};
 
 let merchantOrders = [];
 
@@ -26,6 +27,11 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function apiUrl(path) {
+  const baseUrl = String(portalConfig.apiBaseUrl || "").trim().replace(/\/+$/, "");
+  return baseUrl ? `${baseUrl}${path}` : path;
 }
 
 function consumerBaseUrl() {
@@ -117,7 +123,9 @@ function renderQr(data) {
 
 async function loadMerchantHistory() {
   try {
-    const response = await fetch("/api/merchant/orders");
+    const response = await fetch(apiUrl("/api/merchant/orders"), {
+      credentials: String(portalConfig.apiBaseUrl || "").trim() ? "include" : "same-origin",
+    });
     const contentType = response.headers.get("content-type") || "";
     if (!contentType.includes("application/json")) {
       throw new Error("static-mode");

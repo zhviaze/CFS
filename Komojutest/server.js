@@ -9,6 +9,11 @@ const KOMOJU_API_VERSION = process.env.KOMOJU_API_VERSION || "2025-01-28";
 const MERCHANT_NAME = process.env.MERCHANT_NAME || "CFS株式会社";
 const PRODUCT_NAME = process.env.PRODUCT_NAME || "オンライン決済";
 const CURRENCY = process.env.CURRENCY || "JPY";
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "https://portal.cfsjp.com,http://localhost:8788,http://127.0.0.1:8788")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const COOKIE_SAME_SITE = process.env.COOKIE_SAME_SITE || "Lax";
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
@@ -237,7 +242,8 @@ function parseCookies(req) {
 }
 
 function sessionCookie(sessionId, maxAge) {
-  return `checkout_session=${encodeURIComponent(sessionId)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}`;
+  const secure = COOKIE_SAME_SITE.toLowerCase() === "none" ? "; Secure" : "";
+  return `checkout_session=${encodeURIComponent(sessionId)}; Path=/; HttpOnly; SameSite=${COOKIE_SAME_SITE}; Max-Age=${maxAge}${secure}`;
 }
 
 function currentUser(req) {
@@ -302,6 +308,18 @@ function absoluteBaseUrl(req) {
 
 function authHeader() {
   return `Basic ${Buffer.from(`${KOMOJU_SECRET_KEY}:`).toString("base64")}`;
+}
+
+function applyCorsHeaders(req, res) {
+  const origin = req.headers.origin;
+  if (!origin) return;
+  const isAllowed = ALLOWED_ORIGINS.includes("*") || ALLOWED_ORIGINS.includes(origin);
+  if (!isAllowed) return;
+  res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGINS.includes("*") ? origin : origin);
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Vary", "Origin");
 }
 
 async function komoju(pathname, options = {}) {
@@ -705,8 +723,15 @@ function redirectDirectoryPath(req, res, url) {
 
 async function router(req, res) {
   const url = new URL(req.url, "http://localhost");
+  applyCorsHeaders(req, res);
 
   try {
+    if (req.method === "OPTIONS") {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
     if ((req.method === "GET" || req.method === "HEAD") && redirectDirectoryPath(req, res, url)) return;
 
     if (req.method === "GET" && url.pathname === "/api/config") {

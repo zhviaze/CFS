@@ -55,6 +55,25 @@ GitHub Pages は静的ホスティングのため、ログイン画面とQR遷�
 KOMOJU決済、履歴API、返金APIを実際に動かすには、`server.js` をNodeサーバーとして別途デプロイし、
 `KOMOJU_SECRET_KEY` を環境変数で設定してください。
 
+GitHub Pages からデプロイ済みAPIを呼ぶ場合は、`shared/config.js` にAPIの公開URLを設定します。
+
+```js
+window.KOMOJU_PORTAL_CONFIG = {
+  apiBaseUrl: "https://your-komoju-api.example.com",
+};
+```
+
+APIサーバー側は、公開ページからのブラウザ通信を許可するため以下のように起動します。
+
+```bash
+KOMOJU_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxxxxxx \
+ALLOWED_ORIGINS=https://portal.cfsjp.com \
+COOKIE_SAME_SITE=None \
+node server.js
+```
+
+この構成では、GitHub Pages は画面だけを配信し、KOMOJU API は必ずサーバー側から呼び出します。
+
 ## 本番化で追加したいもの
 
 - SQLite/PostgreSQLなどの永続DB

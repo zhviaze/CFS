@@ -14,6 +14,7 @@ const app = document.querySelector("#app");
 const accountPanel = document.querySelector("#accountPanel");
 const historyList = document.querySelector("#historyList");
 const refreshHistory = document.querySelector("#refreshHistory");
+const portalConfig = window.KOMOJU_PORTAL_CONFIG || {};
 
 const yen = new Intl.NumberFormat("ja-JP", {
   style: "currency",
@@ -56,10 +57,15 @@ function stepper(active) {
 }
 
 async function api(path, options = {}) {
+  if (!hasApiServer() && isServerOnlyPath(path, options)) {
+    throw new Error("決済APIサーバーが未設定です。加盟店にお問い合わせください。");
+  }
+
   let response;
   try {
-    response = await fetch(path, {
+    response = await fetch(apiUrl(path), {
       ...options,
+      credentials: hasApiServer() ? "include" : "same-origin",
       headers: {
         "Content-Type": "application/json",
         ...(options.headers || {}),
@@ -75,6 +81,29 @@ async function api(path, options = {}) {
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.error || "通信に失敗しました。");
   return payload;
+}
+
+function hasApiServer() {
+  return Boolean(String(portalConfig.apiBaseUrl || "").trim()) || !isPublishedStaticHost();
+}
+
+function apiUrl(path) {
+  const baseUrl = String(portalConfig.apiBaseUrl || "").trim().replace(/\/+$/, "");
+  return baseUrl ? `${baseUrl}${path}` : path;
+}
+
+function isPublishedStaticHost() {
+  return location.hostname === "portal.cfsjp.com" || location.hostname.endsWith(".github.io");
+}
+
+function isServerOnlyPath(path, options = {}) {
+  const method = String(options.method || "GET").toUpperCase();
+  return (
+    (/^\/api\/orders\/[^/]+\/session$/.test(path) && method === "POST") ||
+    (/^\/api\/orders\/[^/]+\/customer-payment$/.test(path) && method === "POST") ||
+    (/^\/api\/orders\/[^/]+\/secure-token-status$/.test(path) && method === "POST") ||
+    (/^\/api\/orders\/[^/]+\/refund$/.test(path) && method === "POST")
+  );
 }
 
 function staticApi(path, options = {}) {
@@ -103,7 +132,7 @@ function staticApi(path, options = {}) {
         { value: "monthly", label: "毎月" },
         { value: "yearly", label: "毎年" },
       ],
-      komojuReady: true,
+      komojuReady: hasApiServer(),
     };
   }
 
@@ -179,7 +208,7 @@ function staticApi(path, options = {}) {
   }
 
   if (/^\/api\/orders\/[^/]+\/session$/.test(path) && method === "POST") {
-    throw new Error("公開ページから実決済へ進むには、KOMOJU連携用のサーバーAPI接続が必要です。");
+    throw new Error("決済APIサーバーが未設定です。加盟店にお問い合わせください。");
   }
 
   if (/^\/api\/orders\/[^/]+\/customer-payment$/.test(path) && method === "POST") {
