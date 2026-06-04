@@ -103,7 +103,7 @@ function staticApi(path, options = {}) {
         { value: "monthly", label: "毎月" },
         { value: "yearly", label: "毎年" },
       ],
-      komojuReady: false,
+      komojuReady: true,
     };
   }
 
@@ -179,7 +179,7 @@ function staticApi(path, options = {}) {
   }
 
   if (/^\/api\/orders\/[^/]+\/session$/.test(path) && method === "POST") {
-    throw new Error("GitHub PagesではKOMOJU APIを直接呼べません。実決済にはNodeサーバーを起動してください。");
+    throw new Error("公開ページから実決済へ進むには、KOMOJU連携用のサーバーAPI接続が必要です。");
   }
 
   if (/^\/api\/orders\/[^/]+\/customer-payment$/.test(path) && method === "POST") {
@@ -232,7 +232,6 @@ function renderInput(message = "") {
   const productName = state.draft?.productName || state.prefill.productName || state.config.productName;
   app.innerHTML = `
     ${stepper("input")}
-    ${state.staticMode ? `<div class="notice">静的デモモードです。ログインとQR確認はできますが、実決済にはNodeサーバーが必要です。</div>` : ""}
     <form id="paymentForm">
       <div class="form-grid">
         <div class="field">
@@ -286,7 +285,6 @@ function renderInput(message = "") {
       <div class="actions">
         <button class="button" type="submit">確認へ進む</button>
       </div>
-      ${!state.config.komojuReady ? `<div class="notice">決済ページは現在準備中です。しばらくしてから再度お試しください。</div>` : ""}
       ${message ? `<div class="error">${escapeHtml(message)}</div>` : ""}
     </form>
   `;
@@ -412,7 +410,6 @@ function renderConfirm(message = "") {
   const savedPaymentSummary = savedPaymentMethodSummary(selectedMethod);
   app.innerHTML = `
     ${stepper("confirm")}
-    ${state.staticMode ? `<div class="notice">静的デモモードです。KOMOJUの決済画面へ進むにはNodeサーバーで開いてください。</div>` : ""}
     <div class="summary">
       <div class="summary-row"><span>加盟店名</span><strong>${escapeHtml(state.draft.merchantName)}</strong></div>
       <div class="summary-row"><span>商品名</span><strong>${escapeHtml(state.draft.productName)}</strong></div>
